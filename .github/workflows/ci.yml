@@ -1,0 +1,32 @@
+name: Build Status - Development
+on:
+  push:
+    branches:
+    - development
+  pull_request:
+    branches:
+    - development
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+    - name: Branch Checkout
+      uses: actions/checkout@v2.4.0
+    - name: Setup .Net 6 SDK
+      uses: actions/setup-dotnet@v1.9.0
+      with:
+        dotnet-version: '6.0.x'      
+    - name: Set Custom NuGet Packages
+      run: |
+        dotnet nuget add source ${env:PrivateNuGetUrl} -n "SBRW Launcher Libraries" -u ${env:GHUserName} -p ${env:Password} --store-password-in-clear-text
+      env:
+        PrivateNuGetUrl: ${{ secrets.SBRW_LIBRARIES_LAUNCHER_NUGET_URL }}
+        GHUserName: ${{ secrets.SBRW_LIBRARIES_LAUNCHER_USERNAME }}
+        Password: ${{ secrets.SBRW_LIBRARIES_LAUNCHER_OUTHTOKEN }}
+    - name: Restore Custom NuGet Packages
+      run: dotnet restore --ignore-failed-sources
+    - name: Build
+      run: dotnet build --configuration Release
+    - name: Test
+      run: dotnet test --configuration Release --no-build
