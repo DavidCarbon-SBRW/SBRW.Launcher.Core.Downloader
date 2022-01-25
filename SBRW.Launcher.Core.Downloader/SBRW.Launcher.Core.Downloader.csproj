@@ -15,7 +15,7 @@
 	  <PackageIconUrl />
 	  <RepositoryUrl>https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader</RepositoryUrl>
 	  <PackageProjectUrl>https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader</PackageProjectUrl>
-	  <Description>A Game Launchers Multipurpose Library built within the .NET Standard Framework</Description>
+	  <Description>A Downloader Library built to Download Game Files</Description>
 	  <PackageTags>Game, Downloader, LZMA</PackageTags>
 	  <PackageReleaseNotes></PackageReleaseNotes>
 	  <RepositoryType>git</RepositoryType>
