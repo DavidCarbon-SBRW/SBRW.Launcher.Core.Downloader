@@ -4,7 +4,7 @@ using System.Text;
 
 namespace SBRW.Launcher.Core.Downloader
 {
-    internal class Download_Data_Support
+    public class Download_Data_Support
     {
         private static string Version { get { return "0.0.0.1"; } }
         public static bool System_Unix { get; set; }
