@@ -11,7 +11,10 @@ namespace SBRW.Launcher.Core.Downloader
     public class Download_Queue
     {
         private int DownloadBlockSize { get { return 10240 * 5; } }
-        private bool Cancel { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool Cancel { get; set; }
         /// <summary>
         /// 
         /// </summary>
