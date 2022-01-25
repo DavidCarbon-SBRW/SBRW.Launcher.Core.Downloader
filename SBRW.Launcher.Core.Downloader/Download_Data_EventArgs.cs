@@ -15,11 +15,14 @@ namespace SBRW.Launcher.Core.Downloader
         /// 
         /// </summary>
         public string Download_State { get; internal set; } = string.Empty;
-        private long File_Size_Total { get; set; }
         /// <summary>
         /// 
         /// </summary>
-        public long File_Size_Current { get; set; }
+        public long File_Size_Total { get; internal set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public long File_Size_Current { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
