@@ -5,7 +5,7 @@ namespace SBRW.Launcher.Core.Downloader.Exception_
     /// <summary>
     /// 
     /// </summary>
-    public class Download_Data_Exception_EventArgs : EventArgs
+    public class Download_Exception_EventArgs : EventArgs
     {
         /// <summary>
         /// 
@@ -19,7 +19,7 @@ namespace SBRW.Launcher.Core.Downloader.Exception_
         /// 
         /// </summary>
         /// <param name="Exception_Caught"></param>
-        public Download_Data_Exception_EventArgs(Exception Exception_Caught)
+        public Download_Exception_EventArgs(Exception Exception_Caught)
         {
             this.Recorded_Exception = Exception_Caught;
         }
@@ -27,7 +27,7 @@ namespace SBRW.Launcher.Core.Downloader.Exception_
         /// 
         /// </summary>
         /// <param name="Time_Caught"></param>
-        public Download_Data_Exception_EventArgs(DateTime Time_Caught)
+        public Download_Exception_EventArgs(DateTime Time_Caught)
         {
             this.Recorded_Time = Time_Caught;
         }
@@ -36,7 +36,7 @@ namespace SBRW.Launcher.Core.Downloader.Exception_
         /// </summary>
         /// <param name="Exception_Caught"></param>
         /// <param name="Time_Caught"></param>
-        public Download_Data_Exception_EventArgs(Exception Exception_Caught, DateTime Time_Caught)
+        public Download_Exception_EventArgs(Exception Exception_Caught, DateTime Time_Caught)
         {
             this.Recorded_Exception = Exception_Caught;
             this.Recorded_Time = Time_Caught;

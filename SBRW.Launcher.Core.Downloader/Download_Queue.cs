@@ -1,4 +1,5 @@
-﻿using SBRW.Launcher.Core.Downloader.Exception_;
+﻿using SBRW.Launcher.Core.Downloader.EventArg_;
+using SBRW.Launcher.Core.Downloader.Exception_;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,6 +31,14 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
+        private Download_Data? Download_System { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public DateTime Start_Time { get; internal set; }
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="Sender"></param>
         /// <param name="Events"></param>
         public delegate void Download_Data_Progress_Handler(object Sender, Download_Data_Progress_EventArgs Events);
@@ -52,19 +61,11 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         /// <param name="Sender"></param>
         /// <param name="Events"></param>
-        public delegate void Download_Data_Exception_Handler(object Sender, Download_Data_Exception_EventArgs Events);
+        public delegate void Download_Data_Exception_Handler(object Sender, Download_Exception_EventArgs Events);
         /// <summary>
         /// 
         /// </summary>
         public event Download_Data_Exception_Handler? Internal_Error;
-        /// <summary>
-        /// 
-        /// </summary>
-        private Download_Data? Download_System { get; set; }
-        /// <summary>
-        /// 
-        /// </summary>
-        public DateTime Start_Time { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
@@ -74,7 +75,7 @@ namespace SBRW.Launcher.Core.Downloader
         {
             if (this.Internal_Error != null && Event_Hook)
             {
-                this.Internal_Error(this, new Download_Data_Exception_EventArgs(Exception_Caught, DateTime.Now));
+                this.Internal_Error(this, new Download_Exception_EventArgs(Exception_Caught, DateTime.Now));
             }
             else
             {
