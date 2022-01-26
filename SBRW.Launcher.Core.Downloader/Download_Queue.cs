@@ -32,7 +32,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         /// <param name="Sender"></param>
         /// <param name="Events"></param>
-        public delegate void Download_Data_Progress_Handler(object Sender, Download_Data_EventArgs Events);
+        public delegate void Download_Data_Progress_Handler(object Sender, Download_Data_Progress_EventArgs Events);
         /// <summary>
         /// 
         /// </summary>
@@ -125,7 +125,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                     if (Download_System.IsProgressKnown && (this.Live_Progress != null)) 
                     {
-                        this.Live_Progress(this, new Download_Data_EventArgs(totalDownloaded, Download_System.FileSize, Start_Time));
+                        this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_System.FileSize, totalDownloaded, Start_Time));
                     }
 
                     if (Cancel)

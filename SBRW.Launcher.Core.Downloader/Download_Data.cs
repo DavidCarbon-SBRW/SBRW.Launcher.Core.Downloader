@@ -69,7 +69,9 @@ namespace SBRW.Launcher.Core.Downloader
             // If we don't know how big the file is supposed to be,
             // we can't resume, so delete what we already have if something is on disk already.
             if (!Data_Recevied.IsProgressKnown && File.Exists(Location_Download))
+            {
                 File.Delete(Location_Download);
+            }
 
             if (Data_Recevied.IsProgressKnown && File.Exists(Location_Download))
             {
@@ -125,6 +127,20 @@ namespace SBRW.Launcher.Core.Downloader
             this.Web_Response = Received_response;
             this.Data_Size = Received_Size;
             this.Data_Start = Received_Start;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Received_response"></param>
+        /// <param name="Received_Size"></param>
+        /// <param name="Received_Start"></param>
+        /// <param name="Received_Stream"></param>
+        private Download_Data(WebResponse Received_response, long Received_Size, long Received_Start, Stream Received_Stream)
+        {
+            this.Web_Response = Received_response;
+            this.Data_Size = Received_Size;
+            this.Data_Start = Received_Start;
+            this.Live_Stream = Received_Stream;
         }
         /// <summary>
         /// 
