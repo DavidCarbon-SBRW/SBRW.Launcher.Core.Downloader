@@ -10,7 +10,10 @@ namespace SBRW.Launcher.Core.Downloader
     /// </summary>
     public class Download_Data
     {
-        private WebResponse? Web_Response { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public WebResponse? Web_Response { get; set; }
         private Stream? Live_Stream { get; set; }
         private long Data_Size { get; set; }
         private long Data_Start { get; set; }
@@ -71,7 +74,7 @@ namespace SBRW.Launcher.Core.Downloader
             if (Data_Recevied.IsProgressKnown && File.Exists(Location_Download))
             {
                 // We only support resuming on http Data_Requestuests
-                if (!(Data_Recevied.Response is HttpWebResponse))
+                if (!(Data_Recevied.Web_Response is HttpWebResponse))
                 {
                     File.Delete(Location_Download);
                 }
@@ -96,7 +99,7 @@ namespace SBRW.Launcher.Core.Downloader
                         ((HttpWebRequest)Data_Request).Headers["X-UserAgent"] = Download_Data_Support.Header;
                         Data_Recevied.Web_Response = Data_Request.GetResponse();
 
-                        if (((HttpWebResponse)Data_Recevied.Response).StatusCode != HttpStatusCode.PartialContent)
+                        if (((HttpWebResponse)Data_Recevied.Web_Response).StatusCode != HttpStatusCode.PartialContent)
                         {
                             // They didn't support our resume Data_Requestuest. 
                             File.Delete(Location_Download);
@@ -107,17 +110,29 @@ namespace SBRW.Launcher.Core.Downloader
             }
             return Data_Recevied;
         }
-
-        // Used by the factory method
+        /// <summary>
+        /// Used by the factory method
+        /// </summary>
         private Download_Data() { }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Received_response"></param>
+        /// <param name="Received_Size"></param>
+        /// <param name="Received_Start"></param>
         private Download_Data(WebResponse Received_response, long Received_Size, long Received_Start)
         {
             this.Web_Response = Received_response;
             this.Data_Size = Received_Size;
             this.Data_Start = Received_Start;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Received_response"></param>
+        /// <param name="Received_Size"></param>
+        /// <param name="Received_Start"></param>
+        /// <param name="Received_Stream"></param>
         private Download_Data(WebResponse Received_response, long Received_Size, long Received_Start, Stream Received_Stream)
         {
             this.Web_Response = Received_response;
@@ -154,7 +169,6 @@ namespace SBRW.Launcher.Core.Downloader
             }
             // FileWebResponse doesn't have a status code to check.
         }
-
         /// <summary>
         /// Checks the file size of a remote file. If size is -1, then the file size
         /// could not be determined.
@@ -181,7 +195,11 @@ namespace SBRW.Launcher.Core.Downloader
 
             return Received_Size;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <returns></returns>
         private WebRequest GetRequest(string Web_Address)
         {
             WebRequest Proxy_Request = WebRequest.Create(Web_Address);
@@ -212,10 +230,6 @@ namespace SBRW.Launcher.Core.Downloader
 
         #region Properties
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public WebResponse? Response { get; set; }
         /// <summary>
         /// 
         /// </summary>

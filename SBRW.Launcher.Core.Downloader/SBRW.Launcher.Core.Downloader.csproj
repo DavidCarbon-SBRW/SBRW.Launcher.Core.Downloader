@@ -5,12 +5,13 @@
     <Nullable>enable</Nullable>
 	<LangVersion>8.0</LangVersion>
 	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	  <Version>0.0.3</Version>
+	  <Version>0.0.4</Version>
 	  <Authors>Soapbox Race World - Launcher Division</Authors>
 	  <Company>Soapbox Race World</Company>
 	  <Copyright>© Soapbox Race World</Copyright>
 	  <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 	  <NeutralLanguage>en</NeutralLanguage>
+	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	  <PackageIcon>Logo_512.png</PackageIcon>
 	  <PackageIconUrl />
 	  <RepositoryUrl>https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader</RepositoryUrl>

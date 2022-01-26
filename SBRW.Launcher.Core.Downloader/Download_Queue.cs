@@ -10,7 +10,10 @@ namespace SBRW.Launcher.Core.Downloader
     /// </summary>
     public class Download_Queue
     {
-        private int DownloadBlockSize { get { return 10240 * 5; } }
+        /// <summary>
+        /// 
+        /// </summary>
+        private int Download_Block_Size { get { return 10240 * 5; } }
         /// <summary>
         /// 
         /// </summary>
@@ -26,18 +29,28 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public event Download_Data_Delegates.Download_Data_Progress_Handler? ProgressChanged;
+        /// <param name="Sender"></param>
+        /// <param name="Events"></param>
+        public delegate void Download_Data_Progress_Handler(object Sender, Download_Data_EventArgs Events);
         /// <summary>
-        /// /
+        /// 
         /// </summary>
-        public event EventHandler? DownloadComplete;
-
+        public event Download_Data_Progress_Handler? Live_Progress;
+        /// <summary>
+        /// 
+        /// </summary>
+        public event EventHandler? Complete;
+        /// <summary>
+        /// 
+        /// </summary>
+        private Download_Data? Download_System { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         private void OnDownloadComplete()
         {
-            if (this.DownloadComplete != null) { this.DownloadComplete(this, new EventArgs()); }
+            if (this.Complete != null) { this.Complete(this, new EventArgs()); }
         }
-
-        private static Download_Data? Download_System { get; set; }
         /// <summary>
         /// 
         /// </summary>
@@ -47,8 +60,6 @@ namespace SBRW.Launcher.Core.Downloader
         /// <exception cref="ArgumentException"></exception>
         public void Download(string Web_Address, string Location_Folder = "", string File_Name = "")
         {
-            this.Cancel = false;
-
             try
             {
                 Download_System = Download_Data.Create(Web_Address, Location_Folder, this.Web_Proxy);
@@ -56,25 +67,22 @@ namespace SBRW.Launcher.Core.Downloader
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
 
                 this.Download_Location = string.IsNullOrWhiteSpace(File_Name) ?
-                    Path.Combine(Location_Folder, Path.GetFileName(Download_System.Response.ResponseUri.ToString())) : Path.Combine(Location_Folder, File_Name);
+                    Path.Combine(Location_Folder, Path.GetFileName(Download_System.Web_Response.ResponseUri.ToString())) : Path.Combine(Location_Folder, File_Name);
 
                 if (!File.Exists(Download_Location))
                 {
-                    FileStream fs = File.Create(Download_Location);
-                    fs.Close();
+                    File.Create(Download_Location).Close();
                 }
 
-                byte[] buffer = new byte[DownloadBlockSize];
+                byte[] buffer = new byte[Download_Block_Size];
                 int readCount;
 
                 long totalDownloaded = Download_System.StartPoint;
-                bool gotCanceled = false;
 
-                while ((int)(readCount = Download_System.DownloadStream.Read(buffer, 0, DownloadBlockSize)) > 0)
+                while ((int)(readCount = Download_System.DownloadStream.Read(buffer, 0, Download_Block_Size)) > 0)
                 {
                     if (Cancel)
                     {
-                        gotCanceled = true;
                         Download_System.Close();
                         break;
                     }
@@ -87,21 +95,24 @@ namespace SBRW.Launcher.Core.Downloader
 
                     if (Cancel)
                     {
-                        gotCanceled = true;
                         Download_System.Close();
                         break;
                     }
                 }
 
-                if (!gotCanceled)
+                if (!Cancel)
                 {
                     OnDownloadComplete();
                 }
             }
-            catch (UriFormatException e)
+            catch (UriFormatException Error)
             {
                 throw new ArgumentException(
-                    string.Format("Could not parse the URL \"{0}\" - it's either malformed or is an unknown protocol.", Web_Address), e);
+                    string.Format("Could not parse the URL \"{0}\" - it's either malformed or is an unknown protocol.", Web_Address), Error);
+            }
+            catch (Exception)
+            {
+                throw;
             }
             finally
             {
@@ -109,7 +120,6 @@ namespace SBRW.Launcher.Core.Downloader
                     Download_System.Close();
             }
         }
-
         /// <summary>
         /// Download a file from a list or URLs. If downloading from one of the URLs fails,
         /// another URL is tried.
@@ -156,13 +166,13 @@ namespace SBRW.Launcher.Core.Downloader
                         break;
                     }
                 }
+
                 if (Web_Address_Exception != null)
                 {
                     throw Web_Address_Exception;
                 }
             }
         }
-
         /// <summary>
         /// Asynchronously download a file from the url.
         /// </summary>
@@ -220,15 +230,21 @@ namespace SBRW.Launcher.Core.Downloader
                 }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="count"></param>
+        /// <param name="fileName"></param>
+        /// <exception cref="ArgumentException"></exception>
         private void SaveToFile(byte[] buffer, int count, string fileName)
         {
-            FileStream? f = null;
+            FileStream? Live_File = null;
 
             try
             {
-                f = File.Open(fileName, FileMode.Append, FileAccess.Write);
-                f.Write(buffer, 0, count);
+                Live_File = File.Open(fileName, FileMode.Append, FileAccess.Write);
+                Live_File.Write(buffer, 0, count);
             }
             catch (ArgumentException e)
             {
@@ -237,16 +253,22 @@ namespace SBRW.Launcher.Core.Downloader
             }
             finally
             {
-                if (f != null)
-                    f.Close();
+                if (Live_File != null)
+                {
+                    Live_File.Close();
+                }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="current"></param>
+        /// <param name="target"></param>
         private void RaiseProgressChanged(long current, long target)
         {
-            if (this.ProgressChanged != null)
+            if (this.Live_Progress != null)
             {
-                this.ProgressChanged(this, new Download_Data_EventArgs(target, current));
+                this.Live_Progress(this, new Download_Data_EventArgs(target, current));
             } 
         }
     }
