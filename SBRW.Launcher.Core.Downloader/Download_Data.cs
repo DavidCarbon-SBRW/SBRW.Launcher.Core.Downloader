@@ -101,7 +101,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                         if (((HttpWebResponse)Data_Recevied.Web_Response).StatusCode != HttpStatusCode.PartialContent)
                         {
-                            // They didn't support our resume Data_Requestuest. 
+                            // They didn't support our resume request
                             File.Delete(Location_Download);
                             Data_Recevied.Data_Start = 0;
                         }
@@ -130,42 +130,30 @@ namespace SBRW.Launcher.Core.Downloader
         /// 
         /// </summary>
         /// <param name="Received_response"></param>
-        /// <param name="Received_Size"></param>
-        /// <param name="Received_Start"></param>
-        /// <param name="Received_Stream"></param>
-        private Download_Data(WebResponse Received_response, long Received_Size, long Received_Start, Stream Received_Stream)
-        {
-            this.Web_Response = Received_response;
-            this.Data_Size = Received_Size;
-            this.Data_Start = Received_Start;
-            this.Live_Stream = Received_Stream;
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="response"></param>
-        /// <param name="url"></param>
+        /// <param name="Web_Address"></param>
         /// <exception cref="ArgumentException"></exception>
-        private static void ValidateResponse(WebResponse response, string url)
+        private static void ValidateResponse(WebResponse Received_response, string Web_Address)
         {
-            if (response is HttpWebResponse)
+            if (Received_response is HttpWebResponse)
             {
-                HttpWebResponse httpResponse = (HttpWebResponse)response;
+                HttpWebResponse httpResponse = (HttpWebResponse)Received_response;
                 // If it's an HTML page, it's probably an error page. Comment this
                 // out to enable downloading of HTML pages.
                 if (httpResponse.ContentType.Contains("text/html") || httpResponse.StatusCode == HttpStatusCode.NotFound)
                 {
                     throw new ArgumentException(
-                        String.Format("Could not download \"{0}\" - a web page was returned from the web server.",
-                        url));
+                        string.Format("Could not download \"{0}\" - a web page was returned from the web server.",
+                        Web_Address));
                 }
             }
-            else if (response is FtpWebResponse)
+            else if (Received_response is FtpWebResponse)
             {
-                FtpWebResponse ftpResponse = (FtpWebResponse)response;
+                FtpWebResponse ftpResponse = (FtpWebResponse)Received_response;
                 if (ftpResponse.StatusCode == FtpStatusCode.ConnectionClosed)
+                {
                     throw new ArgumentException(
-                        String.Format("Could not download \"{0}\" - FTP server closed the connection.", url));
+                        string.Format("Could not download \"{0}\" - FTP server closed the connection.", Web_Address));
+                } 
             }
             // FileWebResponse doesn't have a status code to check.
         }

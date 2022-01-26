@@ -21,7 +21,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public string? Download_Location { get; set; }
+        public string? Download_Location { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
@@ -39,7 +39,13 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public event EventHandler? Complete;
+        /// <param name="Sender"></param>
+        /// <param name="Events"></param>
+        public delegate void Download_Data_Completion_Handler(object Sender, Download_Data_Complete_EventArgs Events);
+        /// <summary>
+        /// 
+        /// </summary>
+        public event Download_Data_Completion_Handler? Complete;
         /// <summary>
         /// 
         /// </summary>
@@ -47,10 +53,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        private void OnDownloadComplete()
-        {
-            if (this.Complete != null) { this.Complete(this, new EventArgs()); }
-        }
+        public DateTime Start_Time { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
@@ -62,6 +65,8 @@ namespace SBRW.Launcher.Core.Downloader
         {
             try
             {
+                Start_Time = DateTime.Now;
+
                 Download_System = Download_Data.Create(Web_Address, Location_Folder, this.Web_Proxy);
 
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
@@ -91,7 +96,10 @@ namespace SBRW.Launcher.Core.Downloader
 
                     SaveToFile(buffer, readCount, this.Download_Location);
 
-                    if (Download_System.IsProgressKnown) { RaiseProgressChanged(totalDownloaded, Download_System.FileSize); }
+                    if (Download_System.IsProgressKnown) 
+                    {
+                        this.Live_Progress?.Invoke(this, new Download_Data_EventArgs(totalDownloaded, Download_System.FileSize, Start_Time));
+                    }
 
                     if (Cancel)
                     {
@@ -100,10 +108,7 @@ namespace SBRW.Launcher.Core.Downloader
                     }
                 }
 
-                if (!Cancel)
-                {
-                    OnDownloadComplete();
-                }
+                this.Complete?.Invoke(this, new Download_Data_Complete_EventArgs(!Cancel, DateTime.Now));
             }
             catch (UriFormatException Error)
             {
@@ -117,7 +122,9 @@ namespace SBRW.Launcher.Core.Downloader
             finally
             {
                 if (Download_System != null)
+                {
                     Download_System.Close();
+                }
             }
         }
         /// <summary>
@@ -258,18 +265,6 @@ namespace SBRW.Launcher.Core.Downloader
                     Live_File.Close();
                 }
             }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="current"></param>
-        /// <param name="target"></param>
-        private void RaiseProgressChanged(long current, long target)
-        {
-            if (this.Live_Progress != null)
-            {
-                this.Live_Progress(this, new Download_Data_EventArgs(target, current));
-            } 
         }
     }
 }
