@@ -14,7 +14,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public string Download_State { get; internal set; } = string.Empty;
+        public string? Download_State { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
@@ -26,14 +26,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="Received_File_Size_Total"></param>
-        /// <param name="Received_File_Size_Currente"></param>
-        public Download_Data_EventArgs(long Received_File_Size_Total, long Received_File_Size_Currente)
-        {
-            this.File_Size_Total = Received_File_Size_Total;
-            this.File_Size_Current = Received_File_Size_Currente;
-            this.Download_Percentage = (int)((((double)Received_File_Size_Currente) / File_Size_Total) * 100);
-        }
+        public DateTime Start_Time { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
@@ -50,6 +43,45 @@ namespace SBRW.Launcher.Core.Downloader
         public Download_Data_EventArgs(int Received_Completed_Percentage, string Received_Download_State)
         {
             this.Download_Percentage = Received_Completed_Percentage;
+            this.Download_State = Received_Download_State;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Received_File_Size_Total"></param>
+        /// <param name="Received_File_Size_Current"></param>
+        public Download_Data_EventArgs(long Received_File_Size_Total, long Received_File_Size_Current)
+        {
+            this.File_Size_Total = Received_File_Size_Total;
+            this.File_Size_Current = Received_File_Size_Current;
+            this.Download_Percentage = (int)((((double)Received_File_Size_Current) / Received_File_Size_Total) * 100);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Received_File_Size_Total"></param>
+        /// <param name="Received_File_Size_Current"></param>
+        /// <param name="Received_Start_Time"></param>
+        public Download_Data_EventArgs(long Received_File_Size_Total, long Received_File_Size_Current, DateTime Received_Start_Time)
+        {
+            this.File_Size_Total = Received_File_Size_Total;
+            this.File_Size_Current = Received_File_Size_Current;
+            this.Download_Percentage = (int)((((double)Received_File_Size_Current) / Received_File_Size_Total) * 100);
+            this.Start_Time = Received_Start_Time;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Received_File_Size_Total"></param>
+        /// <param name="Received_File_Size_Current"></param>
+        /// <param name="Received_Start_Time"></param>
+        /// <param name="Received_Download_State"></param>
+        public Download_Data_EventArgs(long Received_File_Size_Total, long Received_File_Size_Current, DateTime Received_Start_Time, string Received_Download_State)
+        {
+            this.File_Size_Total = Received_File_Size_Total;
+            this.File_Size_Current = Received_File_Size_Current;
+            this.Download_Percentage = (int)((((double)Received_File_Size_Current) / Received_File_Size_Total) * 100);
+            this.Start_Time = Received_Start_Time;
             this.Download_State = Received_Download_State;
         }
     }
