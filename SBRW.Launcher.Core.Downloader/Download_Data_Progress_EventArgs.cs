@@ -5,7 +5,7 @@ namespace SBRW.Launcher.Core.Downloader
     /// <summary>
     /// Progress of a downloading file.
     /// </summary>
-    public class Download_Data_EventArgs : EventArgs
+    public class Download_Data_Progress_EventArgs : EventArgs
     {
         /// <summary>
         /// 
@@ -31,7 +31,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// 
         /// </summary>
         /// <param name="Received_Download_State"></param>
-        public Download_Data_EventArgs(string Received_Download_State)
+        public Download_Data_Progress_EventArgs(string Received_Download_State)
         {
             this.Download_State = Received_Download_State;
         }
@@ -40,7 +40,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         /// <param name="Received_Completed_Percentage"></param>
         /// <param name="Received_Download_State"></param>
-        public Download_Data_EventArgs(int Received_Completed_Percentage, string Received_Download_State)
+        public Download_Data_Progress_EventArgs(int Received_Completed_Percentage, string Received_Download_State)
         {
             this.Download_Percentage = Received_Completed_Percentage;
             this.Download_State = Received_Download_State;
@@ -50,7 +50,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         /// <param name="Received_File_Size_Total"></param>
         /// <param name="Received_File_Size_Current"></param>
-        public Download_Data_EventArgs(long Received_File_Size_Total, long Received_File_Size_Current)
+        public Download_Data_Progress_EventArgs(long Received_File_Size_Total, long Received_File_Size_Current)
         {
             this.File_Size_Total = Received_File_Size_Total;
             this.File_Size_Current = Received_File_Size_Current;
@@ -62,7 +62,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Received_File_Size_Total"></param>
         /// <param name="Received_File_Size_Current"></param>
         /// <param name="Received_Start_Time"></param>
-        public Download_Data_EventArgs(long Received_File_Size_Total, long Received_File_Size_Current, DateTime Received_Start_Time)
+        public Download_Data_Progress_EventArgs(long Received_File_Size_Total, long Received_File_Size_Current, DateTime Received_Start_Time)
         {
             this.File_Size_Total = Received_File_Size_Total;
             this.File_Size_Current = Received_File_Size_Current;
@@ -76,7 +76,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Received_File_Size_Current"></param>
         /// <param name="Received_Start_Time"></param>
         /// <param name="Received_Download_State"></param>
-        public Download_Data_EventArgs(long Received_File_Size_Total, long Received_File_Size_Current, DateTime Received_Start_Time, string Received_Download_State)
+        public Download_Data_Progress_EventArgs(long Received_File_Size_Total, long Received_File_Size_Current, DateTime Received_Start_Time, string Received_Download_State)
         {
             this.File_Size_Total = Received_File_Size_Total;
             this.File_Size_Current = Received_File_Size_Current;
