@@ -5,7 +5,7 @@
     /// </summary>
     public class Download_Data_Support
     {
-        private static string Version { get { return "0.0.0.4"; } }
+        private static string Version { get { return "0.0.0.9"; } }
         /// <summary>
         /// 
         /// </summary>
@@ -13,7 +13,7 @@
         /// <summary>
         /// 
         /// </summary>
-        public static bool Alternative_WebCalls { get; set;}
+        public static bool Alternative_WebCalls { get; set; }
         /// <summary>
         /// 
         /// </summary>
