@@ -18,10 +18,24 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
+        public string? Download_Location { get; internal set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Saved_Location"></param>
+        public Download_Data_Complete_EventArgs(string Saved_Location)
+        {
+            this.Download_Location = Saved_Location;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="Completion_State"></param>
-        public Download_Data_Complete_EventArgs(bool Completion_State)
+        /// <param name="Saved_Location"></param>
+        public Download_Data_Complete_EventArgs(bool Completion_State, string Saved_Location = "")
         {
             this.Complete = Completion_State;
+            this.Download_Location = Saved_Location;
         }
         /// <summary>
         /// 
@@ -31,6 +45,18 @@ namespace SBRW.Launcher.Core.Downloader
         public Download_Data_Complete_EventArgs(bool Completion_State, DateTime Completion_Time)
         {
             this.Complete = Completion_State;
+            this.Stop_Time = Completion_Time;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Completion_State"></param>
+        /// <param name="Saved_Location"></param>
+        /// <param name="Completion_Time"></param>
+        public Download_Data_Complete_EventArgs(bool Completion_State, string Saved_Location, DateTime Completion_Time)
+        {
+            this.Complete = Completion_State;
+            this.Download_Location = Saved_Location;
             this.Stop_Time = Completion_Time;
         }
     }
