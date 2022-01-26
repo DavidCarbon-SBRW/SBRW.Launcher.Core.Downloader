@@ -10,7 +10,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public int Completed_Percentage { get; internal set; }
+        public int Download_Percentage { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
@@ -32,7 +32,7 @@ namespace SBRW.Launcher.Core.Downloader
         {
             this.File_Size_Total = Received_File_Size_Total;
             this.File_Size_Current = Received_File_Size_Currente;
-            this.Completed_Percentage = (int)((((double)Received_File_Size_Currente) / File_Size_Total) * 100);
+            this.Download_Percentage = (int)((((double)Received_File_Size_Currente) / File_Size_Total) * 100);
         }
         /// <summary>
         /// 
@@ -49,7 +49,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Received_Download_State"></param>
         public Download_Data_EventArgs(int Received_Completed_Percentage, string Received_Download_State)
         {
-            this.Completed_Percentage = Received_Completed_Percentage;
+            this.Download_Percentage = Received_Completed_Percentage;
             this.Download_State = Received_Download_State;
         }
     }
