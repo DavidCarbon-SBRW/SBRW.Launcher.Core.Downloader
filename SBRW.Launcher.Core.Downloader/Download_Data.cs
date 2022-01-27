@@ -34,9 +34,10 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Web_Address"></param>
         /// <param name="Location_Folder"></param>
         /// <param name="Local_Web_Proxy"></param>
+        /// <param name="Provided_File_Size"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        public static Download_Data Create(string Web_Address, string Location_Folder, IWebProxy? Local_Web_Proxy = null)
+        public static Download_Data Create(string Web_Address, string Location_Folder, IWebProxy? Local_Web_Proxy = null, long? Provided_File_Size = null)
         {
             // This is what we will return
             Download_Data Data_Recevied = new Download_Data();
@@ -45,7 +46,7 @@ namespace SBRW.Launcher.Core.Downloader
                 Data_Recevied.Web_Proxy = Local_Web_Proxy;
             }
 
-            long Size_Recevied = Data_Recevied.GetFileSize(Web_Address);
+            long Size_Recevied = Provided_File_Size??Data_Recevied.GetFileSize(Web_Address);
             Data_Recevied.Data_Size = Size_Recevied;
 
             WebRequest Data_Request = Data_Recevied.GetRequest(Web_Address);
