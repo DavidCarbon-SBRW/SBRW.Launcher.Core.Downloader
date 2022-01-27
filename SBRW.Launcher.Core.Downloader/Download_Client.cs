@@ -8,12 +8,12 @@ namespace SBRW.Launcher.Core.Downloader
     /// Constains the connection to the file server and other statistics about a file
     /// that's downloading.
     /// </summary>
-    public class Download_Data
+    public class Download_Client
     {
         /// <summary>
         /// 
         /// </summary>
-        public WebResponse? Web_Response { get; set; }
+        private WebResponse? Web_Response { get; set; }
         private Stream? Live_Stream { get; set; }
         private long Data_Size { get; set; }
         private long Data_Start { get; set; }
@@ -21,32 +21,53 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="Web_Address"></param>
-        /// <param name="destFolder"></param>
-        /// <returns></returns>
-        public static Download_Data Create(string Web_Address, string destFolder)
-        {
-            return Create(Web_Address, destFolder);
-        }
+        public static string? Set_File_Name { get; internal set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public static string? Set_Full_Path { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="Web_Address"></param>
+        /// <param name="Location_File_Path"></param>
+        /// <returns></returns>
+        public static Download_Client Create(string Web_Address, string Location_File_Path)
+        {
+            return Create(-1, Web_Address, Location_File_Path, null, null);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Provided_File_Size"></param>
+        /// <param name="Web_Address"></param>
         /// <param name="Location_Folder"></param>
         /// <param name="Local_Web_Proxy"></param>
+        /// <returns></returns>
+        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, IWebProxy? Local_Web_Proxy = null)
+        {
+            return Create(Provided_File_Size, Web_Address, Location_Folder, null, Local_Web_Proxy);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="Provided_File_Size"></param>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_File_Name"></param>
+        /// <param name="Local_Web_Proxy"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        public static Download_Data Create(string Web_Address, string Location_Folder, IWebProxy? Local_Web_Proxy = null, long? Provided_File_Size = null)
+        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, string? Provided_File_Name = null, IWebProxy? Local_Web_Proxy = null)
         {
             // This is what we will return
-            Download_Data Data_Recevied = new Download_Data();
+            Download_Client Data_Recevied = new Download_Client();
             if (Local_Web_Proxy != null)
             {
                 Data_Recevied.Web_Proxy = Local_Web_Proxy;
             }
 
-            long Size_Recevied = Provided_File_Size??Data_Recevied.GetFileSize(Web_Address);
+            long Size_Recevied = Data_Recevied.GetFileSize(Web_Address, Provided_File_Size);
             Data_Recevied.Data_Size = Size_Recevied;
 
             WebRequest Data_Request = Data_Recevied.GetRequest(Web_Address);
@@ -65,32 +86,33 @@ namespace SBRW.Launcher.Core.Downloader
             ValidateResponse(Data_Recevied.Web_Response, Web_Address);
 
             // Take the name of the file given to use from the web server.
-            string Location_Download = Path.Combine(Location_Folder, Path.GetFileName(Data_Recevied.Web_Response.ResponseUri.ToString()));
+            Set_File_Name = Path.GetFileName(!string.IsNullOrWhiteSpace(Provided_File_Name) ? Provided_File_Name : Data_Recevied.Web_Response.ResponseUri.ToString());
+            Set_Full_Path = Path.Combine(Location_Folder, ".Launcher", "Downloads", Set_File_Name);
 
             // If we don't know how big the file is supposed to be,
             // we can't resume, so delete what we already have if something is on disk already.
-            if (!Data_Recevied.IsProgressKnown && File.Exists(Location_Download))
+            if (!Data_Recevied.IsProgressKnown && File.Exists(Set_Full_Path))
             {
-                File.Delete(Location_Download);
+                File.Delete(Set_Full_Path);
             }
 
-            if (Data_Recevied.IsProgressKnown && File.Exists(Location_Download))
+            if (Data_Recevied.IsProgressKnown && File.Exists(Set_Full_Path))
             {
                 // We only support resuming on http Data_Requestuests
                 if (!(Data_Recevied.Web_Response is HttpWebResponse))
                 {
-                    File.Delete(Location_Download);
+                    File.Delete(Set_Full_Path);
                 }
                 else
                 {
                     // Try and start where the file on disk left off
-                    Data_Recevied.Data_Start = new FileInfo(Location_Download).Length;
+                    Data_Recevied.Data_Start = new FileInfo(Set_Full_Path).Length;
 
                     // If we have a file that's bigger than what is online, then something 
                     // strange happened. Delete it and start again.
                     if (Data_Recevied.Data_Start > Size_Recevied)
                     {
-                        File.Delete(Location_Download);
+                        File.Delete(Set_Full_Path);
                     }
                     else if (Data_Recevied.Data_Start < Size_Recevied)
                     {
@@ -99,50 +121,25 @@ namespace SBRW.Launcher.Core.Downloader
                         Data_Request = Data_Recevied.GetRequest(Web_Address);
                         ((HttpWebRequest)Data_Request).AddRange((int)Data_Recevied.Data_Start);
                         ((HttpWebRequest)Data_Request).Headers["X-MTNTR-HEADER-VAL"] = (Data_Recevied.Data_Start).ToString();
-                        ((HttpWebRequest)Data_Request).Headers["X-UserAgent"] = Download_Data_Support.Header;
+                        ((HttpWebRequest)Data_Request).Headers["X-UserAgent"] = Download_Settings.Header;
                         Data_Recevied.Web_Response = Data_Request.GetResponse();
 
                         if (((HttpWebResponse)Data_Recevied.Web_Response).StatusCode != HttpStatusCode.PartialContent)
                         {
                             // They didn't support our resume request
-                            File.Delete(Location_Download);
+                            File.Delete(Set_Full_Path);
                             Data_Recevied.Data_Start = 0;
                         }
                     }
                 }
             }
+
             return Data_Recevied;
         }
         /// <summary>
         /// Used by the factory method
         /// </summary>
-        private Download_Data() { }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Received_response"></param>
-        /// <param name="Received_Size"></param>
-        /// <param name="Received_Start"></param>
-        private Download_Data(WebResponse Received_response, long Received_Size, long Received_Start)
-        {
-            this.Web_Response = Received_response;
-            this.Data_Size = Received_Size;
-            this.Data_Start = Received_Start;
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Received_response"></param>
-        /// <param name="Received_Size"></param>
-        /// <param name="Received_Start"></param>
-        /// <param name="Received_Stream"></param>
-        private Download_Data(WebResponse Received_response, long Received_Size, long Received_Start, Stream Received_Stream)
-        {
-            this.Web_Response = Received_response;
-            this.Data_Size = Received_Size;
-            this.Data_Start = Received_Start;
-            this.Live_Stream = Received_Stream;
-        }
+        public Download_Client() { }
         /// <summary>
         /// 
         /// </summary>
@@ -175,12 +172,12 @@ namespace SBRW.Launcher.Core.Downloader
             // FileWebResponse doesn't have a status code to check.
         }
         /// <summary>
-        /// Checks the file size of a remote file. If size is -1, then the file size
-        /// could not be determined.
+        /// 
         /// </summary>
         /// <param name="Web_Address"></param>
+        /// <param name="Provided_File_Size"></param>
         /// <returns></returns>
-        private long GetFileSize(string Web_Address)
+        private long GetFileSize(string Web_Address, long Provided_File_Size)
         {
             WebResponse? Size_Response = null;
             long Received_Size = -1;
@@ -189,6 +186,18 @@ namespace SBRW.Launcher.Core.Downloader
             {
                 Size_Response = GetRequest(Web_Address).GetResponse();
                 Received_Size = Size_Response.ContentLength;
+
+                if (Received_Size <= -1 && Provided_File_Size > -1)
+                {
+                    Received_Size = Provided_File_Size;
+                }
+            }
+            catch (Exception)
+            {
+                if (Provided_File_Size > -1)
+                {
+                    Received_Size = Provided_File_Size;
+                }
             }
             finally
             {
@@ -210,7 +219,7 @@ namespace SBRW.Launcher.Core.Downloader
             WebRequest Proxy_Request = WebRequest.Create(Web_Address);
             if (Proxy_Request is HttpWebRequest)
             {
-                Proxy_Request.Headers["X-UserAgent"] = Download_Data_Support.Header;
+                Proxy_Request.Headers["X-UserAgent"] = Download_Settings.Header;
                 Proxy_Request.Credentials = CredentialCache.DefaultCredentials;
                 Proxy_Request.Proxy.GetProxy(new Uri("http://www.google.com"));
             }
@@ -287,6 +296,16 @@ namespace SBRW.Launcher.Core.Downloader
                 // couldn't determine it, and so we don't know
                 // progress information.
                 return this.Data_Size > -1;
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Full_Path
+        {
+            get
+            {
+                return Set_Full_Path;
             }
         }
         #endregion

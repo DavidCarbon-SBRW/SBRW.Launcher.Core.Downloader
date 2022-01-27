@@ -3,9 +3,9 @@
     /// <summary>
     /// 
     /// </summary>
-    public class Download_Data_Support
+    public class Download_Settings
     {
-        private static string Version { get { return "0.0.0.10"; } }
+        private static string Version { get { return "0.0.0.12"; } }
         /// <summary>
         /// 
         /// </summary>

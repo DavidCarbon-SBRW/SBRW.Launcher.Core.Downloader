@@ -231,10 +231,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     ServicePointManager.FindServicePoint(URLCall).ConnectionLeaseTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
                     var Client = new WebClient();
 
-                    if (!Download_Data_Support.Alternative_WebCalls) { Client = new WebClientWithTimeout(); }
+                    if (!Download_Settings.Alternative_WebCalls) { Client = new WebClientWithTimeout(); }
                     else
                     {
-                        Client.Headers.Add("user-agent", Download_Data_Support.Header_LZMA);
+                        Client.Headers.Add("user-agent", Download_Settings.Header_LZMA);
                     }
                     Client.DownloadDataCompleted += new DownloadDataCompletedEventHandler(this.Downloader_DownloadFileCompleted);
 
@@ -322,10 +322,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     long num5 = 0L;
                     var Client = new WebClient();
 
-                    if (!Download_Data_Support.Alternative_WebCalls) { Client = new WebClientWithTimeout(); }
+                    if (!Download_Settings.Alternative_WebCalls) { Client = new WebClientWithTimeout(); }
                     else
                     {
-                        Client.Headers.Add("user-agent", Download_Data_Support.Header_LZMA);
+                        Client.Headers.Add("user-agent", Download_Settings.Header_LZMA);
                     }
                     Client.Headers.Add("Accept", "text/html,text/xml,application/xhtml+xml,application/xml,application/*,*/*;q=0.9,*/*;q=0.8");
                     Client.Headers.Add("Accept-Language", "en-us,en;q=0.5");
@@ -775,10 +775,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
 
                     var Client = new WebClient();
 
-                    if (!Download_Data_Support.Alternative_WebCalls) { Client = new WebClientWithTimeout(); }
+                    if (!Download_Settings.Alternative_WebCalls) { Client = new WebClientWithTimeout(); }
                     else
                     {
-                        Client.Headers.Add("user-agent", Download_Data_Support.Header_LZMA);
+                        Client.Headers.Add("user-agent", Download_Settings.Header_LZMA);
                     }
                     Client.Headers.Add("Accept", "text/html,text/xml,application/xhtml+xml,application/xml,application/*,*/*;q=0.9,*/*;q=0.8");
                     Client.Headers.Add("Accept-Language", "en-us,en;q=0.5");
@@ -927,10 +927,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
             ServicePointManager.FindServicePoint(URLCall).ConnectionLeaseTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
             var Client = new WebClient();
 
-            if (!Download_Data_Support.Alternative_WebCalls) { Client = new WebClientWithTimeout(); }
+            if (!Download_Settings.Alternative_WebCalls) { Client = new WebClientWithTimeout(); }
             else
             {
-                Client.Headers.Add("user-agent", Download_Data_Support.Header_LZMA);
+                Client.Headers.Add("user-agent", Download_Settings.Header_LZMA);
             }
             Client.Headers.Add("Accept", "text/html,text/xml,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
             Client.Headers.Add("Accept-Language", "en-us,en;q=0.5");
