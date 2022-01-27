@@ -31,7 +31,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        private Download_Data? Download_System { get; set; }
+        private Download_Client? Download_System { get; set; }
         /// <summary>
         /// 
         /// </summary>
@@ -95,7 +95,7 @@ namespace SBRW.Launcher.Core.Downloader
             {
                 Start_Time = DateTime.Now;
 
-                Download_System = Download_Data.Create(Provied_File_Size, Web_Address, Location_Folder, this.Web_Proxy);
+                Download_System = Download_Client.Create(Provied_File_Size, Web_Address, Location_Folder, this.Web_Proxy);
 
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
 

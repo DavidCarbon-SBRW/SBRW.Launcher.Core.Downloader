@@ -57,11 +57,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         {
             try
             {
-                if (Download_Data_Support.Alternative_WebCalls)
+                if (Download_Settings.Alternative_WebCalls)
                 {
                     using (WebClient webClient = new WebClient())
                     {
-                        webClient.Headers.Add("user-agent", Download_Data_Support.Header_LZMA);
+                        webClient.Headers.Add("user-agent", Download_Settings.Header_LZMA);
                         webClient.DownloadDataCompleted += new DownloadDataCompletedEventHandler(this.DownloadManager_DownloadDataCompleted);
                         webClient.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
                         while (true)
