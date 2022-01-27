@@ -100,7 +100,7 @@ namespace SBRW.Launcher.Core.Downloader
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
 
                 this.Download_Location = string.IsNullOrWhiteSpace(File_Name) ?
-                    Path.Combine(Location_Folder, Path.GetFileName(Download_System.Web_Response.ResponseUri.ToString())) : Path.Combine(Location_Folder, File_Name);
+                    Path.Combine(Location_Folder, ".launcher", Path.GetFileName(Download_System.Web_Response.ResponseUri.ToString())) : Path.Combine(Location_Folder, ".launcher", File_Name);
 
                 if (!File.Exists(Download_Location))
                 {
