@@ -104,6 +104,11 @@ namespace SBRW.Launcher.Core.Downloader
 
                 if (!File.Exists(Download_Location))
                 {
+                    if (!Directory.Exists(Path.GetFullPath(Download_Location)))
+                    {
+                        Directory.CreateDirectory(Path.GetFullPath(Download_Location));
+                    }
+
                     File.Create(Download_Location).Close();
                 }
 
