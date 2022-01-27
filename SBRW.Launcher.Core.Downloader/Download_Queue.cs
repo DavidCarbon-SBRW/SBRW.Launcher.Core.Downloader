@@ -89,28 +89,26 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Location_Folder"></param>
         /// <param name="File_Name"></param>
         /// <param name="Provied_File_Size"></param>
-        public void Download(string Web_Address, string Location_Folder, long Provied_File_Size, string File_Name = "")
+        public void Download(string Web_Address, string Location_Folder, long Provied_File_Size = -1, string? File_Name = null)
         {
             try
             {
                 Start_Time = DateTime.Now;
 
-                Download_System = Download_Data.Create(Web_Address, Location_Folder, Provied_File_Size, this.Web_Proxy);
+                Download_System = Download_Data.Create(Provied_File_Size, Web_Address, Location_Folder, this.Web_Proxy);
 
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
 
-                this.Download_Location = string.IsNullOrWhiteSpace(File_Name) ?
-                    Path.Combine(Location_Folder, ".launcher", Path.GetFileName(Download_System.Web_Response.ResponseUri.ToString())) : Path.Combine(Location_Folder, ".launcher", File_Name);
+                this.Download_Location = Download_System.Full_Path;
 
-                if (!File.Exists(Download_Location))
+                if (!File.Exists(Download_System.Full_Path))
                 {
-                    string Full_Path = Path.GetDirectoryName(Path.GetFullPath(Download_Location));
-                    if (!Directory.Exists(Full_Path))
+                    if (!Directory.Exists(Path.GetDirectoryName(Download_System.Full_Path)))
                     {
-                        Directory.CreateDirectory(Full_Path);
+                        Directory.CreateDirectory(Path.GetDirectoryName(Download_System.Full_Path));
                     }
 
-                    File.Create(Download_Location).Close();
+                    File.Create(Download_System.Full_Path).Close();
                 }
 
                 byte[] buffer = new byte[Download_Block_Size];
@@ -132,7 +130,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                     totalDownloaded += readCount;
 
-                    SaveToFile(buffer, readCount, this.Download_Location);
+                    SaveToFile(buffer, readCount, Download_System.Full_Path);
 
                     if (Download_System.IsProgressKnown && (this.Live_Progress != null)) 
                     {
@@ -152,7 +150,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                 if (this.Complete != null)
                 {
-                    this.Complete(this, new Download_Data_Complete_EventArgs(!Cancel, Download_Location, DateTime.Now));
+                    this.Complete(this, new Download_Data_Complete_EventArgs(!Cancel, Download_System.Full_Path, DateTime.Now));
                 }
             }
             catch (UriFormatException Error)
