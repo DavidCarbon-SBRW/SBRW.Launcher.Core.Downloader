@@ -88,19 +88,19 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Web_Address"></param>
         /// <param name="Location_Folder"></param>
         /// <param name="File_Name"></param>
-        /// <exception cref="ArgumentException"></exception>
-        public void Download(string Web_Address, string Location_Folder = "", string File_Name = "")
+        /// <param name="Provied_File_Size"></param>
+        public void Download(string Web_Address, string Location_Folder, string? File_Name = null, long? Provied_File_Size = null)
         {
             try
             {
                 Start_Time = DateTime.Now;
 
-                Download_System = Download_Data.Create(Web_Address, Location_Folder, this.Web_Proxy);
+                Download_System = Download_Data.Create(Web_Address, Location_Folder, this.Web_Proxy, Provied_File_Size);
 
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
 
                 this.Download_Location = string.IsNullOrWhiteSpace(File_Name) ?
-                    Path.Combine(Location_Folder, Path.GetFileName(Download_System.Web_Response.ResponseUri.ToString())) : Path.Combine(Location_Folder, File_Name);
+                    Path.Combine(Location_Folder, ".launcher", Path.GetFileName(Download_System.Web_Response.ResponseUri.ToString())) : Path.Combine(Location_Folder, ".launcher", File_Name);
 
                 if (!File.Exists(Download_Location))
                 {
@@ -119,6 +119,10 @@ namespace SBRW.Launcher.Core.Downloader
                         Download_System.Close();
                         break;
                     }
+                    else
+                    {
+                        GC.Collect();
+                    }
 
                     totalDownloaded += readCount;
 
@@ -133,6 +137,10 @@ namespace SBRW.Launcher.Core.Downloader
                     {
                         Download_System.Close();
                         break;
+                    }
+                    else
+                    {
+                        GC.Collect();
                     }
                 }
 

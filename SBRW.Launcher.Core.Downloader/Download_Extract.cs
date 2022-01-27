@@ -119,6 +119,7 @@ namespace SBRW.Launcher.Core.Downloader
                         else
                         {
                             Current_File = Package_File.FullName;
+                            Total_Current_File++;
 
                             if (!File.Exists(Path.Combine(File_Extract_Path, Current_File.Replace(File_Extension_Replacement, string.Empty))) && !Cancel)
                             {
@@ -186,13 +187,24 @@ namespace SBRW.Launcher.Core.Downloader
                                         {
                                             long numBytes = new FileInfo(File_Temporary_Location).Length;
                                             Binary_File.Write(Binary_Reader.ReadBytes((int)numBytes));
-                                            Binary_File.Close();
-                                            Binary_File.Dispose();
                                         }
+
+                                        Binary_File.Close();
+                                        Binary_File.Dispose();
+                                        Decrypt_Stream.Close();
+                                        Decrypt_Stream.Dispose();
+                                        File_Stream.Close();
+                                        File_Stream.Dispose();
+                                        Crypto_Provider.Clear();
+                                        Crypto_Provider.Dispose();
                                     }
                                     catch (Exception Error)
                                     {
                                         Exception_Router(true, Error);
+                                    }
+                                    finally
+                                    {
+                                        GC.Collect();
                                     }
                                 }
                                 else
@@ -213,12 +225,9 @@ namespace SBRW.Launcher.Core.Downloader
                             if ((Total_Current_File == Total_File) && (this.Complete != null) && !Cancel)
                             {
                                 this.Complete(this, new Download_Extract_Complete_EventArgs(true, DateTime.Now));
+                                Cancel = true;
                             }
-                            else if (!Cancel)
-                            {
-                                Total_Current_File++;
-                            }
-                            else
+                            else if (Cancel)
                             {
                                 break;
                             }

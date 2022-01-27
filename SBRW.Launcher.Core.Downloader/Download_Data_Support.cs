@@ -5,7 +5,7 @@
     /// </summary>
     public class Download_Data_Support
     {
-        private static string Version { get { return "0.0.0.9"; } }
+        private static string Version { get { return "0.0.0.10"; } }
         /// <summary>
         /// 
         /// </summary>
