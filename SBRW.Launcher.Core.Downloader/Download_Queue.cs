@@ -89,13 +89,13 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Location_Folder"></param>
         /// <param name="File_Name"></param>
         /// <param name="Provied_File_Size"></param>
-        public void Download(string Web_Address, string Location_Folder, string? File_Name = null, long? Provied_File_Size = null)
+        public void Download(string Web_Address, string Location_Folder, long Provied_File_Size, string File_Name = "")
         {
             try
             {
                 Start_Time = DateTime.Now;
 
-                Download_System = Download_Data.Create(Web_Address, Location_Folder, this.Web_Proxy, Provied_File_Size);
+                Download_System = Download_Data.Create(Web_Address, Location_Folder, Provied_File_Size, this.Web_Proxy);
 
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
 
@@ -104,9 +104,10 @@ namespace SBRW.Launcher.Core.Downloader
 
                 if (!File.Exists(Download_Location))
                 {
-                    if (!Directory.Exists(Path.GetFullPath(Download_Location)))
+                    string Full_Path = Path.GetDirectoryName(Path.GetFullPath(Download_Location));
+                    if (!Directory.Exists(Full_Path))
                     {
-                        Directory.CreateDirectory(Path.GetFullPath(Download_Location));
+                        Directory.CreateDirectory(Full_Path);
                     }
 
                     File.Create(Download_Location).Close();
@@ -177,13 +178,13 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         public void Download(List<string> Web_Address_List)
         {
-            this.Download(Web_Address_List, string.Empty);
+            this.Download(Web_Address_List, string.Empty, -1);
         }
         /// <summary>
         /// Download a file from a list or URLs. If downloading from one of the URLs fails,
         /// another URL is tried.
         /// </summary>
-        public void Download(List<string> Web_Address_List, string Location_Folder)
+        public void Download(List<string> Web_Address_List, string Location_Folder, long Provied_File_Size)
         {
             // validate input
             if (Web_Address_List == null)
@@ -205,7 +206,7 @@ namespace SBRW.Launcher.Core.Downloader
                     Web_Address_Exception = null;
                     try
                     {
-                        Download(Single_Web_Address, Location_Folder);
+                        Download(Single_Web_Address, Location_Folder, Provied_File_Size);
                     }
                     catch (Exception e)
                     {
@@ -270,14 +271,14 @@ namespace SBRW.Launcher.Core.Downloader
                 if (Object_Data is string[])
                 {
                     string[] List_Strings = Object_Data as string[];
-                    this.Download(List_Strings[0], List_Strings[1]);
+                    this.Download(List_Strings[0], List_Strings[1], long.TryParse(List_Strings[2], out long Provied_File_Size) ? Provied_File_Size : -1);
                 }
                 else
                 {
                     object[] List_Objects = Object_Data as object[];
                     List<string> Web_Address_List = (List_Objects[0] as List<string>) ?? new List<string>();
                     string Location_Folder = List_Objects[1] as string;
-                    this.Download(Web_Address_List, Location_Folder);
+                    this.Download(Web_Address_List, Location_Folder, long.TryParse(List_Objects[2] as string, out long Provied_File_Size) ? Provied_File_Size : -1);
                 }
             }
         }

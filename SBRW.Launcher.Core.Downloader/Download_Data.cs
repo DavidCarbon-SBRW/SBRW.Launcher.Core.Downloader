@@ -22,11 +22,11 @@ namespace SBRW.Launcher.Core.Downloader
         /// 
         /// </summary>
         /// <param name="Web_Address"></param>
-        /// <param name="destFolder"></param>
+        /// <param name="Location_Folder"></param>
         /// <returns></returns>
-        public static Download_Data Create(string Web_Address, string destFolder)
+        public static Download_Data Create(string Web_Address, string Location_Folder)
         {
-            return Create(Web_Address, destFolder);
+            return Create(Web_Address, Location_Folder, -1);
         }
         /// <summary>
         /// 
@@ -37,7 +37,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Provided_File_Size"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        public static Download_Data Create(string Web_Address, string Location_Folder, IWebProxy? Local_Web_Proxy = null, long? Provided_File_Size = null)
+        public static Download_Data Create(string Web_Address, string Location_Folder, long Provided_File_Size, IWebProxy? Local_Web_Proxy = null)
         {
             // This is what we will return
             Download_Data Data_Recevied = new Download_Data();
@@ -46,7 +46,7 @@ namespace SBRW.Launcher.Core.Downloader
                 Data_Recevied.Web_Proxy = Local_Web_Proxy;
             }
 
-            long Size_Recevied = Provided_File_Size??Data_Recevied.GetFileSize(Web_Address);
+            long Size_Recevied = Data_Recevied.GetFileSize(Web_Address, Provided_File_Size);
             Data_Recevied.Data_Size = Size_Recevied;
 
             WebRequest Data_Request = Data_Recevied.GetRequest(Web_Address);
@@ -175,20 +175,27 @@ namespace SBRW.Launcher.Core.Downloader
             // FileWebResponse doesn't have a status code to check.
         }
         /// <summary>
-        /// Checks the file size of a remote file. If size is -1, then the file size
-        /// could not be determined.
+        /// 
         /// </summary>
         /// <param name="Web_Address"></param>
+        /// <param name="Provided_File_Size"></param>
         /// <returns></returns>
-        private long GetFileSize(string Web_Address)
+        private long GetFileSize(string Web_Address, long Provided_File_Size)
         {
             WebResponse? Size_Response = null;
             long Received_Size = -1;
 
             try
             {
-                Size_Response = GetRequest(Web_Address).GetResponse();
-                Received_Size = Size_Response.ContentLength;
+                if (Provided_File_Size > -1)
+                {
+                    Received_Size = Provided_File_Size;
+                }
+                else
+                {
+                    Size_Response = GetRequest(Web_Address).GetResponse();
+                    Received_Size = Size_Response.ContentLength;
+                }
             }
             finally
             {
