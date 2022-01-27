@@ -184,14 +184,19 @@ namespace SBRW.Launcher.Core.Downloader
 
             try
             {
-                if (Provided_File_Size > -1)
+                Size_Response = GetRequest(Web_Address).GetResponse();
+                Received_Size = Size_Response.ContentLength;
+
+                if (Received_Size <= -1 && Provided_File_Size > -1)
                 {
                     Received_Size = Provided_File_Size;
                 }
-                else
+            }
+            catch (Exception)
+            {
+                if (Provided_File_Size > -1)
                 {
-                    Size_Response = GetRequest(Web_Address).GetResponse();
-                    Received_Size = Size_Response.ContentLength;
+                    Received_Size = Provided_File_Size;
                 }
             }
             finally
