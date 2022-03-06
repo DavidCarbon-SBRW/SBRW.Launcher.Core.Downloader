@@ -7,12 +7,9 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 
-namespace SBRW.Launcher.Core.Downloader.LZMA_
+namespace SBRW.Launcher.Core.Downloader.LZMA
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    public class Download_Hash_Reader_LZMA
+    internal class Download_LZMA_Data_Hash
     {
         /// <summary>
         /// 
@@ -25,78 +22,65 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// <summary>
         /// 
         /// </summary>
-        readonly Dictionary<string, Download_Hash_Reader_LZMA.HashTuple> _fileList;
+        readonly Dictionary<string, Download_LZMA_Data_Hash_Tuple> File_List;
         /// <summary>
         /// 
         /// </summary>
-        readonly Queue<string> _queueHash;
+        readonly Queue<string> Queue_Hash;
         /// <summary>
         /// 
         /// </summary>
-        private readonly static object _queueHashLock;
+        private readonly static object Queue_Hash_Lock;
+        private static int Worker_Count { get; set; }
         /// <summary>
         /// 
         /// </summary>
-        private static int _workerCount;
+        readonly bool Use_Cache = true;
         /// <summary>
         /// 
         /// </summary>
-        readonly bool _useCache = true;
-        /// <summary>
-        /// 
-        /// </summary>
-        readonly static Download_Hash_Reader_LZMA _instance;
-        /// <summary>
-        /// 
-        /// </summary>
-        internal static Download_Hash_Reader_LZMA Instance
+        readonly static Download_LZMA_Data_Hash Live_Instance;
+
+        internal static Download_LZMA_Data_Hash Instance
         {
-            get { return Download_Hash_Reader_LZMA._instance; }
+            get { return Download_LZMA_Data_Hash.Live_Instance; }
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        static Download_Hash_Reader_LZMA()
+
+        static Download_LZMA_Data_Hash()
         {
-            Download_Hash_Reader_LZMA._queueHashLock = new object();
-            Download_Hash_Reader_LZMA._workerCount = 0;
-            Download_Hash_Reader_LZMA._instance = new Download_Hash_Reader_LZMA();
+            Download_LZMA_Data_Hash.Queue_Hash_Lock = new object();
+            Download_LZMA_Data_Hash.Worker_Count = 0;
+            Download_LZMA_Data_Hash.Live_Instance = new Download_LZMA_Data_Hash();
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        private Download_Hash_Reader_LZMA()
+
+        private Download_LZMA_Data_Hash()
         {
-            this._useCache = true;
-            this._fileList = new Dictionary<string, Download_Hash_Reader_LZMA.HashTuple>();
-            this._queueHash = new Queue<string>();
+            this.Use_Cache = true;
+            this.File_List = new Dictionary<string, Download_LZMA_Data_Hash_Tuple>();
+            this.Queue_Hash = new Queue<string>();
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
+
         private void BackgroundWorker_DoWork(object sender, DoWorkEventArgs args)
         {
             while (true)
             {
-                lock (Download_Hash_Reader_LZMA._queueHashLock)
+                lock (Download_LZMA_Data_Hash.Queue_Hash_Lock)
                 {
-                    if (this._queueHash.Count == 0)
+                    if (this.Queue_Hash.Count == 0)
                     {
-                        Download_Hash_Reader_LZMA._workerCount--;
+                        Download_LZMA_Data_Hash.Worker_Count--;
                         break;
                     }
                 }
-                string str = null;
-                lock (Download_Hash_Reader_LZMA._queueHashLock)
+                string str = string.Empty;
+                lock (Download_LZMA_Data_Hash.Queue_Hash_Lock)
                 {
-                    str = this._queueHash.Dequeue();
+                    str = this.Queue_Hash.Dequeue();
                 }
-                string base64String = null;
+                string base64String = string.Empty;
                 if (File.Exists(str))
                 {
-                    if (string.IsNullOrWhiteSpace(this._fileList[str].Old))
+                    if (string.IsNullOrWhiteSpace(this.File_List[str].Old))
                     {
                         try
                         {
@@ -108,27 +92,20 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                 }
                             }
                         }
-                        catch (Exception)
-                        {
-
-                        }
+                        catch (Exception) { }
                     }
                     else
                     {
-                        base64String = this._fileList[str].Old;
+                        base64String = this.File_List[str].Old;
                     }
                 }
-                lock (this._fileList[str])
+                lock (this.File_List[str])
                 {
-                    this._fileList[str].Old = base64String;
+                    this.File_List[str].Old = base64String;
                 }
             }
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+
         private void BackgroundWorker_RunWorkerComplete(object sender, RunWorkerCompletedEventArgs e)
         {
             if (e.Error != null)
@@ -140,15 +117,15 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// </summary>
         public void Clear()
         {
-            lock (this._queueHash)
+            lock (this.Queue_Hash)
             {
-                this._queueHash.Clear();
+                this.Queue_Hash.Clear();
             }
-            while (Download_Hash_Reader_LZMA._workerCount > 0)
+            while (Download_LZMA_Data_Hash.Worker_Count > 0)
             {
                 Thread.Sleep(100);
             }
-            this._fileList.Clear();
+            this.File_List.Clear();
         }
         /// <summary>
         /// 
@@ -160,9 +137,9 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             string empty = string.Empty;
             while (true)
             {
-                lock (this._fileList[fileName])
+                lock (this.File_List[fileName])
                 {
-                    empty = this._fileList[fileName].Old;
+                    empty = this.File_List[fileName].Old;
                 }
                 if (empty != string.Empty)
                 {
@@ -184,19 +161,20 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             {
                 while (true)
                 {
-                    lock (this._fileList[fileName])
+                    lock (this.File_List[fileName])
                     {
-                        if (this._fileList[fileName].Old != string.Empty)
+                        if (this.File_List[fileName].Old != string.Empty)
                         {
-                            @new = this._fileList[fileName].New == this._fileList[fileName].Old;
+                            @new = this.File_List[fileName].New == this.File_List[fileName].Old;
                             break;
                         }
                     }
                     Thread.Sleep(100);
                 }
             }
-            catch (Exception)
+            catch (Exception Error)
             {
+                Exception exception = Error;
                 return false;
             }
             return @new;
@@ -222,19 +200,19 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 string str1 = string.Concat(innerText, "/", str);
                 if (xmlNodes.SelectSingleNode("hash") != null)
                 {
-                    this._fileList.Add(str1, new Download_Hash_Reader_LZMA.HashTuple(string.Empty, xmlNodes.SelectSingleNode("hash").InnerText));
-                    this._queueHash.Enqueue(str1);
+                    this.File_List.Add(str1, new Download_LZMA_Data_Hash_Tuple(string.Empty, xmlNodes.SelectSingleNode("hash").InnerText));
+                    this.Queue_Hash.Enqueue(str1);
                 }
                 else
                 {
-                    this._fileList.Add(str1, new Download_Hash_Reader_LZMA.HashTuple(null, null));
+                    this.File_List.Add(str1, new Download_LZMA_Data_Hash_Tuple(string.Empty, string.Empty));
                 }
             }
-            if (this._useCache && File.Exists(string.Concat("HashFile", hashFileNameSuffix)))
+            if (this.Use_Cache && File.Exists(string.Concat("HashFile", hashFileNameSuffix)))
             {
-                FileStream fileStream = null;
-                CryptoStream cryptoStream = null;
-                StreamReader streamReader = null;
+                FileStream? fileStream = null;
+                CryptoStream? cryptoStream = null;
+                StreamReader? streamReader = null;
                 try
                 {
                     try
@@ -248,21 +226,24 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                         fileStream = new FileStream(string.Concat("HashFile", hashFileNameSuffix), FileMode.Open);
                         cryptoStream = new CryptoStream(fileStream, cryptoTransform, CryptoStreamMode.Read);
                         streamReader = new StreamReader(cryptoStream);
-                        string str2 = null;
+                        string str2 = string.Empty;
                         while (true)
                         {
                             string str3 = streamReader.ReadLine();
                             str2 = str3;
-                            if (str3 == null)
+                            if (string.IsNullOrWhiteSpace(str3))
                             {
                                 break;
                             }
-                            string[] strArrays = str2.Split(new char[] { '\t' });
-                            string str4 = strArrays[0];
-                            if (this._fileList.ContainsKey(str4) && File.Exists(str4) && long.Parse(strArrays[2]) == (new FileInfo(str4)).LastWriteTime.Ticks)
+                            else
                             {
-                                this._fileList[str4].Old = strArrays[1];
-                                this._fileList[str4].Ticks = long.Parse(strArrays[2]);
+                                string[] strArrays = str2.Split(new char[] { '\t' });
+                                string str4 = strArrays[0];
+                                if (this.File_List.ContainsKey(str4) && File.Exists(str4) && long.Parse(strArrays[2]) == (new FileInfo(str4)).LastWriteTime.Ticks)
+                                {
+                                    this.File_List[str4].Old = strArrays[1];
+                                    this.File_List[str4].Ticks = long.Parse(strArrays[2]);
+                                }
                             }
                         }
                     }
@@ -271,11 +252,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                         CryptographicException cryptographicException = cryptographicException1;
                         streamReader = null;
                         cryptoStream = null;
-                        this._fileList.Clear();
+                        this.File_List.Clear();
                     }
                     catch (Exception)
                     {
-                        this._fileList.Clear();
+                        this.File_List.Clear();
                     }
                 }
                 finally
@@ -298,14 +279,14 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                     File.Delete(string.Concat("HashFile", hashFileNameSuffix));
                 }
             }
-            Download_Hash_Reader_LZMA._workerCount = 0;
-            while (Download_Hash_Reader_LZMA._workerCount < maxWorkers && this._queueHash.Count > 0)
+            Download_LZMA_Data_Hash.Worker_Count = 0;
+            while (Download_LZMA_Data_Hash.Worker_Count < maxWorkers && this.Queue_Hash.Count > 0)
             {
                 BackgroundWorker backgroundWorker = new BackgroundWorker();
                 backgroundWorker.DoWork += new DoWorkEventHandler(this.BackgroundWorker_DoWork);
                 backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(this.BackgroundWorker_RunWorkerComplete);
                 backgroundWorker.RunWorkerAsync();
-                Download_Hash_Reader_LZMA._workerCount++;
+                Download_LZMA_Data_Hash.Worker_Count++;
             }
         }
         /// <summary>
@@ -315,11 +296,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// <param name="writeOldHashes"></param>
         public void WriteHashCache(string hashFileNameSuffix, bool writeOldHashes)
         {
-            lock (this._fileList)
+            lock (this.File_List)
             {
-                FileStream fileStream = null;
-                CryptoStream cryptoStream = null;
-                StreamWriter streamWriter = null;
+                FileStream? fileStream = null;
+                CryptoStream? cryptoStream = null;
+                StreamWriter? streamWriter = null;
                 try
                 {
                     try
@@ -332,10 +313,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                         dESCryptoServiceProvider.Key = numArray;
                         cryptoStream = new CryptoStream(fileStream, dESCryptoServiceProvider.CreateEncryptor(), CryptoStreamMode.Write);
                         streamWriter = new StreamWriter(cryptoStream);
-                        foreach (string key in this._fileList.Keys)
+                        foreach (string key in this.File_List.Keys)
                         {
                             string empty = string.Empty;
-                            empty = (!writeOldHashes ? this._fileList[key].New : this._fileList[key].Old);
+                            empty = (!writeOldHashes ? this.File_List[key].New : this.File_List[key].Old);
                             if (!File.Exists(key) || string.IsNullOrWhiteSpace(empty))
                             {
                                 continue;
@@ -344,10 +325,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                             streamWriter.WriteLine(string.Format("{0}\t{1}\t{2}", key, empty, lastWriteTime.Ticks));
                         }
                     }
-                    catch (Exception)
-                    {
-
-                    }
+                    catch (Exception) { }
                 }
                 finally
                 {
@@ -367,44 +345,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                         fileStream.Dispose();
                     }
                 }
-            }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        private class HashTuple
-        {
-            /// <summary>
-            /// 
-            /// </summary>
-            public string Old;
-            /// <summary>
-            /// 
-            /// </summary>
-            public string New;
-            /// <summary>
-            /// 
-            /// </summary>
-            public long Ticks;
-            /// <summary>
-            /// 
-            /// </summary>
-            /// <param name="oldHash"></param>
-            /// <param name="newHash"></param>
-            /// <param name="ticks"></param>
-            public HashTuple(string oldHash, string newHash, long ticks)
-            {
-                this.Old = oldHash;
-                this.New = newHash;
-                this.Ticks = ticks;
-            }
-            /// <summary>
-            /// 
-            /// </summary>
-            /// <param name="oldHash"></param>
-            /// <param name="newHash"></param>
-            public HashTuple(string oldHash, string newHash) : this(oldHash, newHash, DateTime.Now.AddYears(1).Ticks)
-            {
             }
         }
     }
