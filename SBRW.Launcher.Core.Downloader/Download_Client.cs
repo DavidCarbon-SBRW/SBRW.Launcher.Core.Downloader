@@ -198,7 +198,7 @@ namespace SBRW.Launcher.Core.Downloader
                         }
                         
                         Data_Request = Data_Recevied.GetRequest(Web_Address, Provided_Proxy_Url);
-                        ((HttpWebRequest)Data_Request).AddRange((int)Data_Recevied.Data_Start);
+                        ((HttpWebRequest)Data_Request).AddRange(Data_Recevied.Data_Start);
                         ((HttpWebRequest)Data_Request).Headers["X-MTNTR-HEADER-VAL"] = Data_Recevied.Data_Start.ToString();
                         ((HttpWebRequest)Data_Request).Headers["X-UserAgent"] = Download_Settings.Header;
                         if (Local_Cache_Policy != null)

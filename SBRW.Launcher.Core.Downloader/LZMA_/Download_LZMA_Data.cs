@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 
-namespace SBRW.Launcher.Core.Downloader.LZMA
+namespace SBRW.Launcher.Core.Downloader.LZMA_
 {
     /// <summary>
     /// 
