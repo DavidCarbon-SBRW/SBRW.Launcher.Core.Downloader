@@ -24,7 +24,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        private string? Current_File { get; set; }
+        private string Current_File { get; set; } = string.Empty;
         /// <summary>
         /// 
         /// </summary>

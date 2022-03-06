@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using System.Net.Cache;
 
 namespace SBRW.Launcher.Core.Downloader
 {
@@ -18,14 +19,15 @@ namespace SBRW.Launcher.Core.Downloader
         private long Data_Size { get; set; }
         private long Data_Start { get; set; }
         private IWebProxy? Web_Proxy { get; set; }
+        private RequestCachePolicy? Cache_Policy { get; set; }
         /// <summary>
         /// 
         /// </summary>
-        public static string? Set_File_Name { get; internal set; }
+        public static string Set_File_Name { get; internal set; } = string.Empty;
         /// <summary>
         /// 
         /// </summary>
-        public static string? Set_Full_Path { get; internal set; }
+        public static string Set_Full_Path { get; internal set; } = string.Empty;
         /// <summary>
         /// 
         /// </summary>
@@ -54,17 +56,35 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Provided_File_Size"></param>
         /// <param name="Web_Address"></param>
         /// <param name="Location_Folder"></param>
-        /// <param name="Provided_File_Name"></param>
+        /// <param name="Local_Cache_Policy"></param>
         /// <param name="Local_Web_Proxy"></param>
         /// <returns></returns>
+        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, RequestCachePolicy? Local_Cache_Policy = null, IWebProxy? Local_Web_Proxy = null)
+        {
+            return Create(Provided_File_Size, Web_Address, Location_Folder, null, Local_Web_Proxy, Local_Cache_Policy);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Provided_File_Size"></param>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_File_Name"></param>
+        /// <param name="Local_Web_Proxy"></param>
+        /// <param name="Local_Cache_Policy"></param>
+        /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, string? Provided_File_Name = null, IWebProxy? Local_Web_Proxy = null)
+        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, string? Provided_File_Name = null, IWebProxy? Local_Web_Proxy = null, RequestCachePolicy? Local_Cache_Policy = null)
         {
             // This is what we will return
             Download_Client Data_Recevied = new Download_Client();
             if (Local_Web_Proxy != null)
             {
                 Data_Recevied.Web_Proxy = Local_Web_Proxy;
+            }
+            if (Local_Cache_Policy != null)
+            {
+                Data_Recevied.Cache_Policy = Local_Cache_Policy;
             }
 
             long Size_Recevied = Data_Recevied.GetFileSize(Web_Address, Provided_File_Size);
@@ -150,7 +170,16 @@ namespace SBRW.Launcher.Core.Downloader
         {
             if (Received_response is HttpWebResponse)
             {
-                HttpWebResponse httpResponse = (HttpWebResponse)Received_response;
+                HttpWebResponse? httpResponse = Received_response as HttpWebResponse;
+
+                // If Received Response Is Null, throw an Error
+                if (httpResponse == null)
+                {
+                    throw new ArgumentException(
+                        string.Format("Could not download \"{0}\" - Received Response is Null",
+                        Web_Address));
+                }
+
                 // If it's an HTML page, it's probably an error page. Comment this
                 // out to enable downloading of HTML pages.
                 if (httpResponse.ContentType.Contains("text/html") || httpResponse.StatusCode == HttpStatusCode.NotFound)
@@ -162,7 +191,15 @@ namespace SBRW.Launcher.Core.Downloader
             }
             else if (Received_response is FtpWebResponse)
             {
-                FtpWebResponse ftpResponse = (FtpWebResponse)Received_response;
+                FtpWebResponse? ftpResponse = Received_response as FtpWebResponse;
+
+                if (ftpResponse == null)
+                {
+                    throw new ArgumentException(
+                        string.Format("Could not download \"{0}\" - FTP server Responsed with Null",
+                        Web_Address));
+                }
+
                 if (ftpResponse.StatusCode == FtpStatusCode.ConnectionClosed)
                 {
                     throw new ArgumentException(
@@ -222,6 +259,11 @@ namespace SBRW.Launcher.Core.Downloader
                 Proxy_Request.Headers["X-UserAgent"] = Download_Settings.Header;
                 Proxy_Request.Credentials = CredentialCache.DefaultCredentials;
                 Proxy_Request.Proxy.GetProxy(new Uri("http://www.google.com"));
+            }
+
+            if (this.Cache_Policy != null)
+            {
+                Proxy_Request.CachePolicy = this.Cache_Policy;
             }
 
             if (this.Web_Proxy != null)

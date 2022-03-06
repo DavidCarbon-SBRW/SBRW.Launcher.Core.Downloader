@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Cache;
 
 namespace SBRW.Launcher.Core.Downloader
 {
@@ -23,11 +24,11 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public string? Download_Location { get; internal set; }
+        public string Download_Location { get; internal set; } = string.Empty;
         /// <summary>
         /// 
         /// </summary>
-        public IWebProxy? Web_Proxy { get; set; }
+        public RequestCachePolicy? Cache_Policy { get; set; }
         /// <summary>
         /// 
         /// </summary>
@@ -87,15 +88,16 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         /// <param name="Web_Address"></param>
         /// <param name="Location_Folder"></param>
-        /// <param name="File_Name"></param>
         /// <param name="Provied_File_Size"></param>
-        public void Download(string Web_Address, string Location_Folder, long Provied_File_Size = -1, string? File_Name = null)
+        /// <param name="Local_Cache_Policy"></param>
+        /// <param name="Local_Web_Proxy"></param>
+        public void Download(string Web_Address, string Location_Folder, long Provied_File_Size = -1, RequestCachePolicy? Local_Cache_Policy = null, IWebProxy? Local_Web_Proxy = null)
         {
             try
             {
                 Start_Time = DateTime.Now;
 
-                Download_System = Download_Client.Create(Provied_File_Size, Web_Address, Location_Folder, this.Web_Proxy);
+                Download_System = Download_Client.Create(Provied_File_Size, Web_Address, Location_Folder, Local_Cache_Policy, Local_Web_Proxy);
 
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
 
@@ -148,9 +150,9 @@ namespace SBRW.Launcher.Core.Downloader
                     }
                 }
 
-                if (this.Complete != null)
+                if (this.Complete != null && !Cancel)
                 {
-                    this.Complete(this, new Download_Data_Complete_EventArgs(!Cancel, Download_System.Full_Path, DateTime.Now));
+                    this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.Full_Path, DateTime.Now));
                 }
             }
             catch (UriFormatException Error)
