@@ -11,28 +11,13 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
 {
     internal class Download_LZMA_Data_Manager
     {
-        /// <summary>
-        /// 
-        /// </summary>
-        public const int MaxWorkers = 3;
-        /// <summary>
-        /// 
-        /// </summary>
-        public const int MaxActiveChunks = 16;
+        public int MaxWorkers { get { return 3; } }
+        public int MaxActiveChunks { get { return 16; } }
         private static int Worker_Count { get; set; }
         private int Workers_Max { get; set; }
-        /// <summary>
-        /// 
-        /// </summary>
-        readonly Dictionary<string, DownloadItem> Download_List;
-        /// <summary>
-        /// 
-        /// </summary>
-        readonly LinkedList<string> Download_Queue;
-        /// <summary>
-        /// 
-        /// </summary>
-        readonly List<BackgroundWorker> Workers_Live;
+        private Dictionary<string, Download_LZMA_Data_Manager.DownloadItem> Download_List { get; set; }
+        private LinkedList<string> Download_Queue { get; set; }
+        private List<BackgroundWorker> Workers_Live { get; set; }
         private int Free_Chunks { get; set; }
         private object Free_ChunksLock { get; set; }
         private bool Manager_Running { get; set; }
@@ -46,7 +31,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
 
         static Download_LZMA_Data_Manager()
         {
-            Worker_Count = 0;
+            Download_LZMA_Data_Manager.Worker_Count = 0;
         }
         /// <summary>
         /// 
