@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace SBRW.Launcher.Core.Downloader.LZMA
+namespace SBRW.Launcher.Core.Downloader.LZMA_
 {
     /// <summary>
     /// 
     /// </summary>
-    public class Download_LZMA
+    public class Download_DLL_LZMA
     {
         /// <summary>
         /// 
