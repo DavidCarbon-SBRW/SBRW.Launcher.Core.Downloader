@@ -90,14 +90,15 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Location_Folder"></param>
         /// <param name="Provied_File_Size"></param>
         /// <param name="Local_Cache_Policy"></param>
+        /// <param name="Provided_Proxy_Url"></param>
         /// <param name="Local_Web_Proxy"></param>
-        public void Download(string Web_Address, string Location_Folder, long Provied_File_Size = -1, RequestCachePolicy? Local_Cache_Policy = null, IWebProxy? Local_Web_Proxy = null)
+        public void Download(string Web_Address, string Location_Folder, long Provied_File_Size = -1, RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "", IWebProxy? Local_Web_Proxy = null)
         {
             try
             {
                 Start_Time = DateTime.Now;
 
-                Download_System = Download_Client.Create(Provied_File_Size, Web_Address, Location_Folder, Local_Cache_Policy, Local_Web_Proxy);
+                Download_System = Download_Client.Create(Provied_File_Size, Web_Address, Location_Folder, Local_Cache_Policy, Provided_Proxy_Url, Local_Web_Proxy);
 
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
 
@@ -118,7 +119,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                 long totalDownloaded = Download_System.StartPoint;
 
-                while ((readCount = Download_System.DownloadStream.Read(buffer, 0, Download_Block_Size)) > 0)
+                while (((readCount = Download_System.DownloadStream.Read(buffer, 0, Download_Block_Size)) > 0) && !Cancel)
                 {
                     if (Cancel)
                     {

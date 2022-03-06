@@ -63,6 +63,10 @@ namespace SBRW.Launcher.Core.Downloader
         {
             return Create(Provided_File_Size, Web_Address, Location_Folder, string.Empty, Local_Web_Proxy, Local_Cache_Policy);
         }
+        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "", IWebProxy? Local_Web_Proxy = null)
+        {
+            return Create(Provided_File_Size, Web_Address, Location_Folder, string.Empty, Local_Web_Proxy, Local_Cache_Policy, Provided_Proxy_Url);
+        }
         /// <summary>
         /// 
         /// </summary>
