@@ -11,14 +11,35 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
 {
     internal class Download_LZMA_Data_Hash
     {
-        public int MaxWorkers { get { return 3; } }
-        public string HashFileName { get { return "HashFile"; } }
-        public Dictionary<string, Download_LZMA_Data_Hash_Tuple> File_List { get; set; }
-        public Queue<string> Queue_Hash { get; set; }
-        public static object Queue_Hash_Lock { get; set; }
-        public static int Worker_Count { get; set; }
-        public bool Use_Cache { get; set; } = true;
-        public static Download_LZMA_Data_Hash Live_Instance { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public const int MaxWorkers = 3;
+        /// <summary>
+        /// 
+        /// </summary>
+        public const string HashFileName = "HashFile";
+        /// <summary>
+        /// 
+        /// </summary>
+        readonly Dictionary<string, Download_LZMA_Data_Hash_Tuple> File_List;
+        /// <summary>
+        /// 
+        /// </summary>
+        readonly Queue<string> Queue_Hash;
+        /// <summary>
+        /// 
+        /// </summary>
+        private readonly static object Queue_Hash_Lock;
+        private static int Worker_Count { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        readonly bool Use_Cache = true;
+        /// <summary>
+        /// 
+        /// </summary>
+        readonly static Download_LZMA_Data_Hash Live_Instance;
 
         internal static Download_LZMA_Data_Hash Instance
         {

@@ -19,27 +19,27 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         /// <summary>
         /// 
         /// </summary>
-        public int LZMAOutPropsSize { get { return 5; } }
+        public const int LZMAOutPropsSize = 5;
         /// <summary>
         /// 
         /// </summary>
-        public int LZMALengthSize { get { return 8; } }
+        public const int LZMALengthSize = 8;
         /// <summary>
         /// 
         /// </summary>
-        public int LZMAHeaderSize { get { return 13; } }
+        public const int LZMAHeaderSize = 13;
         /// <summary>
         /// 
         /// </summary>
-        public int HashThreads { get { return 3; } }
+        public const int HashThreads = 3;
         /// <summary>
         /// 
         /// </summary>
-        public int DownloadThreads { get { return 3; } }
+        public const int DownloadThreads = 3;
         /// <summary>
         /// 
         /// </summary>
-        public int DownloadChunks { get { return 16; } }
+        public const int DownloadChunks = 16;
         /// <summary>
         /// 
         /// </summary>
@@ -63,7 +63,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         /// 
         /// </summary>
         public int MHashThreads { get; set; }
-        private Download_LZMA_Data_Manager MDownloadManager { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        readonly Download_LZMA_Data_Manager MDownloadManager;
         private static XmlDocument? MIndexCached { get; set; }
         private static bool MStopFlag { get; set; }
         /// <summary>
