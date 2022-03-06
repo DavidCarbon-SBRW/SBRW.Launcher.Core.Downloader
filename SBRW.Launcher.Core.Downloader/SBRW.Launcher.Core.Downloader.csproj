@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net6.0;net45;net461;net472</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net6.0;net461;net472</TargetFrameworks>
     <Nullable>enable</Nullable>
 	<LangVersion>8.0</LangVersion>
 	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -41,7 +41,7 @@
 		</None>
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(TargetFramework)' == 'net45' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net472'">
+	<ItemGroup Condition="'$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net472'">
 	  <PackageReference Include="System.IO.Compression" Version="4.3.0" />
 	</ItemGroup>
 
