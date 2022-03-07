@@ -19,18 +19,33 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// <summary>
         /// 
         /// </summary>
-        public ISynchronizeInvoke MFE { get; set; }
+        public ISynchronizeInvoke MFE { get; internal set; }
         private Thread MThread { get; set; }
-        private Download_LZMA_Delegates.Download_LZMA_Progress_Updated? ProgressUpdated { get; set; }
-        private Download_LZMA_Delegates.Download_LZMA_Finished? DownloadFinished { get; set; }
-        private Download_LZMA_Delegates.Download_LZMA_Failed? DownloadFailed { get; set; }
-        private Download_LZMA_Delegates.Download_LZMA_Show_Message? ShowMessage { get; set; }
-        private Download_LZMA_Delegates.Download_LZMA_Show_Extract? ShowExtract { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public Download_LZMA_Delegates.Download_LZMA_Progress_Updated? ProgressUpdated { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public Download_LZMA_Delegates.Download_LZMA_Finished? DownloadFinished { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public Download_LZMA_Delegates.Download_LZMA_Failed? DownloadFailed { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public Download_LZMA_Delegates.Download_LZMA_Show_Message? ShowMessage { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public Download_LZMA_Delegates.Download_LZMA_Show_Extract? ShowExtract { get; set; }
         private bool MDownloading { get; set; }
         /// <summary>
         /// 
         /// </summary>
-        public int MHashThreads { get; set; }
+        public int MHashThreads { get; internal set; }
         private Download_LZMA_Data_Manager MDownloadManager { get; set; }
         private static XmlDocument? MIndexCached { get; set; }
         private static bool MStopFlag { get; set; }
