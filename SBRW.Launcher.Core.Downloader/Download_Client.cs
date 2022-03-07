@@ -176,6 +176,7 @@ namespace SBRW.Launcher.Core.Downloader
                 if (!(Data_Recevied.Web_Response is HttpWebResponse))
                 {
                     File.Delete(Set_Full_Path);
+                    Data_Recevied.Data_Start = 0;
                 }
                 else
                 {
@@ -187,6 +188,8 @@ namespace SBRW.Launcher.Core.Downloader
                     if (Data_Recevied.Data_Start > Size_Recevied)
                     {
                         File.Delete(Set_Full_Path);
+                        // Reset Data_Start File Size to Correctly update the Download Percentage
+                        Data_Recevied.Data_Start = 0;
                     }
                     else if (Data_Recevied.Data_Start < Size_Recevied)
                     {

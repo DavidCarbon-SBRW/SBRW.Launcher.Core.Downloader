@@ -2,7 +2,10 @@
 
 namespace SBRW.Launcher.Core.Downloader.LZMA_
 {
-    internal class Download_LZMA_Data_Hash_Tuple
+    /// <summary>
+    /// 
+    /// </summary>
+    public class Download_LZMA_Data_Hash_Tuple
     {
         /// <summary>
         /// 

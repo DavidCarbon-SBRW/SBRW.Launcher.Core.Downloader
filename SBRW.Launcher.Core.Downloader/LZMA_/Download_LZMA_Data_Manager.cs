@@ -9,22 +9,25 @@ using System.Xml;
 
 namespace SBRW.Launcher.Core.Downloader.LZMA_
 {
-    internal class Download_LZMA_Data_Manager
+    /// <summary>
+    /// 
+    /// </summary>
+    public class Download_LZMA_Data_Manager
     {
+        private int Worker_Count { get; set; }
         /// <summary>
-        /// 
+        /// Max Background Workers in an Instance
         /// </summary>
-        public int MaxWorkers { get { return 3; } }
-        /// <summary>
-        /// 
-        /// </summary>
-        public int MaxActiveChunks { get { return 16; } }
-        private static int Worker_Count { get; set; }
-        private int Workers_Max { get; set; }
+        /// <remarks>Default is 3</remarks>
+        public int Workers_Max { get; set; } = 3;
         private Dictionary<string, DownloadItem> Download_List { get; set; }
         private LinkedList<string> Download_Queue { get; set; }
         private List<BackgroundWorker> Workers_Live { get; set; }
-        private int Free_Chunks { get; set; }
+        /// <summary>
+        /// Max Active Chunks in an Instance
+        /// </summary>
+        /// <remarks>Default is 16</remarks>
+        public int Active_Chunks_Max { get; set; } = 16;
         private object Free_ChunksLock { get; set; }
         private bool Manager_Running { get; set; }
         /// <summary>
@@ -33,11 +36,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         public bool ManagerRunning
         {
             get { return this.Manager_Running; }
-        }
-
-        static Download_LZMA_Data_Manager()
-        {
-            Worker_Count = 0;
         }
         /// <summary>
         /// 
@@ -53,8 +51,8 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         public Download_LZMA_Data_Manager(int maxWorkers, int maxActiveChunks)
         {
             this.Workers_Max = maxWorkers;
-            this.Free_Chunks = maxActiveChunks;
-            this.Download_List = new Dictionary<string, Download_LZMA_Data_Manager.DownloadItem>();
+            this.Active_Chunks_Max = maxActiveChunks;
+            this.Download_List = new Dictionary<string, DownloadItem>();
             this.Download_Queue = new LinkedList<string>();
             this.Workers_Live = new List<BackgroundWorker>();
         }
@@ -76,7 +74,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                         webClient.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
                         while (true)
                         {
-                            if (this.Free_Chunks <= 0)
+                            if (this.Active_Chunks_Max <= 0)
                             {
                                 Thread.Sleep(100);
                             }
@@ -90,7 +88,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                         {
                                             this.Workers_Live.Remove((BackgroundWorker)sender);
                                         }
-                                        Download_LZMA_Data_Manager.Worker_Count--;
+                                        this.Worker_Count--;
                                         break;
                                     }
                                 }
@@ -101,7 +99,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                     this.Download_Queue.RemoveLast();
                                     lock (this.Free_ChunksLock)
                                     {
-                                        this.Free_Chunks--;
+                                        this.Active_Chunks_Max--;
                                     }
                                 }
                                 lock (this.Download_List[value])
@@ -151,7 +149,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                         webClient.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
                         while (true)
                         {
-                            if (this.Free_Chunks <= 0)
+                            if (this.Active_Chunks_Max <= 0)
                             {
                                 Thread.Sleep(100);
                             }
@@ -176,7 +174,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                     this.Download_Queue.RemoveLast();
                                     lock (this.Free_ChunksLock)
                                     {
-                                        this.Free_Chunks--;
+                                        this.Active_Chunks_Max--;
                                     }
                                 }
                                 lock (this.Download_List[value])
@@ -257,7 +255,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                     {
                         lock (this.Free_ChunksLock)
                         {
-                            this.Free_Chunks++;
+                            this.Active_Chunks_Max++;
                         }
                     }
                     this.Download_List[key].Status = DownloadStatus.Canceled;
@@ -286,7 +284,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                     {
                         lock (this.Free_ChunksLock)
                         {
-                            this.Free_Chunks++;
+                            this.Active_Chunks_Max++;
                         }
                     }
                     this.Download_List[fileName].Status = DownloadStatus.Canceled;
@@ -348,7 +346,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 }
                 lock (this.Free_ChunksLock)
                 {
-                    this.Free_Chunks++;
+                    this.Active_Chunks_Max++;
                 }
             }
             else
@@ -394,7 +392,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                     this.Download_List[fileName].Data = null;
                     lock (this.Free_ChunksLock)
                     {
-                        this.Free_Chunks++;
+                        this.Active_Chunks_Max++;
                     }
                 }
             }

@@ -9,16 +9,11 @@ using System.Xml;
 
 namespace SBRW.Launcher.Core.Downloader.LZMA_
 {
-    internal class Download_LZMA_Data_Hash
+    /// <summary>
+    /// 
+    /// </summary>
+    public class Download_LZMA_Data_Hash
     {
-        /// <summary>
-        /// 
-        /// </summary>
-        public int MaxWorkers { get { return 3; } }
-        /// <summary>
-        /// 
-        /// </summary>
-        public string HashFileName { get { return "HashFile"; } }
         /// <summary>
         /// 
         /// </summary>
@@ -43,11 +38,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// 
         /// </summary>
         public static Download_LZMA_Data_Hash Live_Instance { get; set; }
-
-        internal static Download_LZMA_Data_Hash Instance
-        {
-            get { return Live_Instance; }
-        }
 
         static Download_LZMA_Data_Hash()
         {
