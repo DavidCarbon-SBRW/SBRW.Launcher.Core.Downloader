@@ -99,6 +99,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 useIndexCache.ToString(),
                 downloadSize.ToString()
             };
+            this.MThread.IsBackground = true;
             this.MThread.Start(parameter);
         }
         /// <summary>
@@ -123,6 +124,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 clearHashes.ToString(),
                 writeHashes.ToString()
             };
+            this.MThread.IsBackground = true;
             this.MThread.Start(parameter);
         }
         /// <summary>
