@@ -20,6 +20,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// 
         /// </summary>
         public ISynchronizeInvoke MFE { get; internal set; }
+        /// <summary>
+        /// Time in Seconds before UI is Updated
+        /// </summary>
+        /// <remarks>Default Value is 10</remarks>
+        public int Progress_Update_Frequency { get; set; } = 10;
         private Thread MThread { get; set; }
         /// <summary>
         /// 
@@ -53,9 +58,57 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// <summary>
         /// 
         /// </summary>
+        public DateTime? Progress_Last_Update { get; internal set; }
+        /// <summary>
+        /// 
+        /// </summary>
         public bool Downloading
         {
             get { return this.MDownloading; }
+        }
+        private void Updated_Progress(object[] Object_Data)
+        {
+            try
+            {
+                if (Progress_Last_Update == null)
+                {
+                    Progress_Last_Update = DateTime.Now.AddSeconds(Progress_Update_Frequency);
+                }
+
+                if (((DateTime.Now - Progress_Last_Update.Value) >= new TimeSpan().Add(TimeSpan.FromSeconds(10))) && (Object_Data != null))
+                {
+                    if (Object_Data.Length > 0 && (this.ProgressUpdated != null) && !MStopFlag)
+                    {
+                        _ = this.MFE.BeginInvoke(this.ProgressUpdated, Object_Data);
+                        Progress_Last_Update = DateTime.Now.AddSeconds(Progress_Update_Frequency);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    if (Object_Data != null)
+                    {
+                        if (Object_Data.Length > 0 && (this.ProgressUpdated != null) && !MStopFlag)
+                        {
+                            _ = this.MFE.BeginInvoke(this.ProgressUpdated, Object_Data);
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+
+                }
+                finally
+                {
+                    GC.Collect();
+                }
+            }
+            finally
+            {
+                GC.Collect();
+            }
         }
         /// <summary>
         /// 
@@ -415,19 +468,17 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                 num5 += (long)num15;
                                 num11 += num15;
                             }
-                            if (this.ProgressUpdated != null)
-                            {
-                                object[] args2 = new object[]
+
+                            Updated_Progress(
+                                new object[]
                                 {
                                     num2,
                                     num3,
                                     num4,
                                     text6,
                                     0
-                                };
+                                });
 
-                                this.MFE.Invoke(this.ProgressUpdated, args2);
-                            }
                             int num17 = int.Parse(xmlNode2.SelectSingleNode("section").InnerText);
                             if (num13 != num17)
                             {
@@ -531,23 +582,16 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                     k += num20;
                                     num3 += (long)num20;
                                 }
-                                if (this.ProgressUpdated != null)
-                                {
-                                    try
-                                    {
-                                        object[] args3 = new object[]
-                                        {
-                                            num2,
-                                            num3,
-                                            num4,
-                                            text6,
-                                            0
-                                        };
 
-                                        this.MFE.BeginInvoke(this.ProgressUpdated, args3);
-                                    }
-                                    catch { }
-                                }
+                                Updated_Progress(
+                                new object[]
+                                {
+                                    num2,
+                                    num3,
+                                    num4,
+                                    text6,
+                                    0
+                                });
                             }
                             if (xmlNode3 != null)
                             {
@@ -771,7 +815,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                             }
                             flag4 = true;
                         }
-                        if (Download_LZMA_Data.MStopFlag)
+                        if (MStopFlag)
                         {
                             ISynchronizeInvoke arg_367_0 = this.MFE;
                             Delegate arg_367_1 = this.DownloadFailed;
@@ -780,16 +824,16 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                             return;
                         }
                         num2 += (long)num6;
-                        object[] args3 = new object[]
-                        {
-                            num,
-                            num2,
-                            0,
-                            innerText,
-                            0
-                        };
 
-                        this.MFE.BeginInvoke(this.ProgressUpdated, args3);
+                        Updated_Progress(
+                        new object[]
+                        {
+                                    num,
+                                    num2,
+                                    0,
+                                    innerText,
+                                    0
+                        });
                     }
                     if (flag3)
                     {
