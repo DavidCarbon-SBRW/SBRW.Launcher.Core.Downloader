@@ -23,8 +23,8 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// <summary>
         /// Time in Seconds before UI is Updated
         /// </summary>
-        /// <remarks>Default Value is 10</remarks>
-        public int Progress_Update_Frequency { get; set; } = 10;
+        /// <remarks>Default Value is 1000 (1 Second)</remarks>
+        public int Progress_Update_Frequency { get; set; } = 1000;
         private Thread MThread { get; set; }
         /// <summary>
         /// 
@@ -66,21 +66,23 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         {
             get { return this.MDownloading; }
         }
+        //@DavidCarbon and/or @Zacam
+        //long downloadLength, long downloadCurrent, long compressedLength, string filename = "", int skiptime = 0
         private void Updated_Progress(object[] Object_Data)
         {
             try
             {
                 if (Progress_Last_Update == null)
                 {
-                    Progress_Last_Update = DateTime.Now.AddSeconds(Progress_Update_Frequency);
+                    Progress_Last_Update = DateTime.Now.AddMilliseconds(Progress_Update_Frequency);
                 }
 
-                if (((DateTime.Now - Progress_Last_Update.Value) >= new TimeSpan().Add(TimeSpan.FromSeconds(10))) && (Object_Data != null))
+                if (((DateTime.Now - Progress_Last_Update.Value) >= TimeSpan.FromMilliseconds(Progress_Update_Frequency)) && (Object_Data != null))
                 {
                     if (Object_Data.Length > 0 && (this.ProgressUpdated != null) && !MStopFlag)
                     {
                         _ = this.MFE.BeginInvoke(this.ProgressUpdated, Object_Data);
-                        Progress_Last_Update = DateTime.Now.AddSeconds(Progress_Update_Frequency);
+                        Progress_Last_Update = DateTime.Now.AddMilliseconds(Progress_Update_Frequency);
                     }
                 }
             }
