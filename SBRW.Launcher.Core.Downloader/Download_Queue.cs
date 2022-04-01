@@ -72,11 +72,18 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         /// <param name="Event_Hook"></param>
         /// <param name="Exception_Caught"></param>
-        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught)
+        /// <param name="Related_To_WebClient"></param>
+        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught, bool Related_To_WebClient = false)
         {
+            if (Related_To_WebClient)
+            {
+                /* Lets stop the download to pervert any memory leaks */
+                this.Cancel = true;
+            }
+
             if (this.Internal_Error != null && Event_Hook)
             {
-                this.Internal_Error(this, new Download_Exception_EventArgs(Exception_Caught, DateTime.Now));
+                this.Internal_Error(this, new Download_Exception_EventArgs(Exception_Caught, DateTime.Now, Related_To_WebClient));
             }
             else
             {
@@ -155,6 +162,10 @@ namespace SBRW.Launcher.Core.Downloader
                 {
                     this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.Full_Path, DateTime.Now));
                 }
+            }
+            catch(WebException Error_Caught)
+            {
+                Exception_Router(true, Error_Caught, true);
             }
             catch (UriFormatException Error)
             {

@@ -18,6 +18,10 @@ namespace SBRW.Launcher.Core.Downloader.Exception_
         /// <summary>
         /// 
         /// </summary>
+        public bool Related_To_WebClient { get; internal set; }
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="Exception_Caught"></param>
         public Download_Exception_EventArgs(Exception Exception_Caught)
         {
@@ -36,10 +40,12 @@ namespace SBRW.Launcher.Core.Downloader.Exception_
         /// </summary>
         /// <param name="Exception_Caught"></param>
         /// <param name="Time_Caught"></param>
-        public Download_Exception_EventArgs(Exception Exception_Caught, DateTime Time_Caught)
+        /// <param name="Exception_Web_Related"></param>
+        public Download_Exception_EventArgs(Exception Exception_Caught, DateTime Time_Caught, bool Exception_Web_Related = false)
         {
             this.Recorded_Exception = Exception_Caught;
             this.Recorded_Time = Time_Caught;
+            this.Related_To_WebClient = Exception_Web_Related;
         }
     }
 }

@@ -114,10 +114,14 @@ namespace SBRW.Launcher.Core.Downloader
             {
                 Data_Recevied.Web_Response = Data_Request.GetResponse();
             }
-            catch (Exception e)
+            catch (WebException)
+            {
+                throw;
+            }
+            catch (Exception Error_Caught)
             {
                 throw new ArgumentException(string.Format(
-                    "Error downloading \"{0}\": {1}", Web_Address, e.Message), e);
+                    "Error downloading \"{0}\": {1}", Web_Address, Error_Caught.Message), Error_Caught);
             }
 
             if (Data_Recevied.Web_Response is HttpWebResponse)
