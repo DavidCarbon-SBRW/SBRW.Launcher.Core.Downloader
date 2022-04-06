@@ -95,18 +95,23 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// <param name="Exception_Caught"></param>
         internal void Exception_Router(bool Event_Hook, Exception Exception_Caught)
         {
-            if (!MStopFlag)
+            try
             {
-                Stop();
+                if (this.Internal_Error != null && Event_Hook && !MStopFlag)
+                {
+                    this.Internal_Error(this, new Download_Exception_EventArgs(Exception_Caught, DateTime.Now));
+                }
+                else
+                {
+                    throw Exception_Caught;
+                }
             }
-
-            if (this.Internal_Error != null && Event_Hook)
+            finally
             {
-                this.Internal_Error(this, new Download_Exception_EventArgs(Exception_Caught, DateTime.Now));
-            }
-            else
-            {
-                throw Exception_Caught;
+                if (!MStopFlag)
+                {
+                    Stop();
+                }
             }
         }
         //@DavidCarbon and/or @Zacam
@@ -122,7 +127,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         {
             try
             {
-                if (this.Live_Progress != null)
+                if (this.Live_Progress != null && !MStopFlag)
                 {
                     if (Progress_Last_Update == null)
                     {
@@ -131,7 +136,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
 
                     if ((DateTime.Now - Progress_Last_Update.Value) >= TimeSpan.FromMilliseconds(Progress_Update_Frequency))
                     {
-                        if (MStopFlag)
+                        if (!MStopFlag)
                         {
                             this.Live_Progress(this, new Download_Data_Progress_EventArgs(Compressed_Length, Download_Current, DateTime.Now));
                             Progress_Last_Update = DateTime.Now.AddMilliseconds(Progress_Update_Frequency);
@@ -245,7 +250,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
 
         private void Downloader_DownloadFileCompleted(object sender, DownloadDataCompletedEventArgs Live_Download_Data)
         {
-            if (Live_Download_Data.Error != null && this.Internal_Web_Error != null)
+            if (Live_Download_Data.Error != null && this.Internal_Web_Error != null && !MStopFlag)
             {
                 this.Internal_Web_Error(this, new Download_Exception_EventArgs(Live_Download_Data.Error, DateTime.Now));
             }
@@ -678,11 +683,13 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                             }
                         }
                     }
+
                     if (!MStopFlag)
                     {
                         Download_LZMA_Data_Hash.Live_Instance.WriteHashCache(text2 + ".hsh", false);
                     }
-                    else if (this.Complete != null && !MStopFlag)
+                    
+                    if (this.Complete != null && !MStopFlag)
                     {
                         this.Complete(this, new Download_Data_Complete_EventArgs(true, DateTime.Now));
                     }
