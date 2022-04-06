@@ -656,7 +656,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
 
                                 if (this.Live_Extract != null && !MStopFlag)
                                 {
-                                    this.Live_Extract(this, new Download_Extract_Progress_EventArgs((int)(num4 / fileschecked) * 100, text6, num4, fileschecked, DateTime.Now));
+                                    this.Live_Extract(this, new Download_Extract_Progress_EventArgs(text6, num4, fileschecked, DateTime.Now));
                                 }
 
                                 if (num24 != 0)
