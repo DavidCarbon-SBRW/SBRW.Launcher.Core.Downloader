@@ -1,4 +1,5 @@
 ﻿using SBRW.Launcher.Core.Downloader.Exception_;
+using SBRW.Launcher.Core.Downloader.Extension_;
 using SBRW.Launcher.Core.Downloader.LZMA_.EventArg_;
 using SBRW.Launcher.Core.Downloader.Web_;
 using System;
@@ -129,38 +130,14 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             {
                 if (this.Live_Progress != null && !MStopFlag)
                 {
-                    if (Progress_Last_Update == null)
-                    {
-                        Progress_Last_Update = DateTime.Now.AddMilliseconds(Progress_Update_Frequency);
-                    }
-
-                    if ((DateTime.Now - Progress_Last_Update.Value) >= TimeSpan.FromMilliseconds(Progress_Update_Frequency))
-                    {
-                        if (!MStopFlag)
-                        {
-                            this.Live_Progress(this, new Download_Data_Progress_EventArgs(Compressed_Length, Download_Current, DateTime.Now));
-                            Progress_Last_Update = DateTime.Now.AddMilliseconds(Progress_Update_Frequency);
-                        }
-                    }
+                    long Some_Quick_Division = Numbers.Division_Check(Download_Current, Compressed_Length);
+                    this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_Current, Compressed_Length,
+                        Download_Length, Some_Quick_Division, Numbers.Division_Check(Download_Current, Download_Length), Numbers.Download_Percentage_Check(Some_Quick_Division), DateTime.Now));
                 }
             }
             catch (Exception)
             {
-                try
-                {
-                    if (this.Live_Progress != null && !MStopFlag)
-                    {
-                        this.Live_Progress(this, new Download_Data_Progress_EventArgs(Compressed_Length, Download_Current, DateTime.Now));
-                    }
-                }
-                catch (Exception)
-                {
 
-                }
-                finally
-                {
-                    GC.Collect();
-                }
             }
             finally
             {
@@ -349,16 +326,16 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 }
                 else
                 {
-                    long num2 = long.Parse(indexFile.SelectSingleNode("/index/header/length").InnerText);
-                    long num3 = 0L;
-                    long num4;
+                    long Header_Length = long.Parse(indexFile.SelectSingleNode("/index/header/length").InnerText);
+                    long Sub_Index_Hash_Length = 0;
+                    long Header_Length_Compressed;
                     if (num == 0uL)
                     {
-                        num4 = long.Parse(indexFile.SelectSingleNode("/index/header/compressed").InnerText);
+                        Header_Length_Compressed = long.Parse(indexFile.SelectSingleNode("/index/header/compressed").InnerText);
                     }
                     else
                     {
-                        num4 = (long)num;
+                        Header_Length_Compressed = (long)num;
                     }
                     long num5 = 0L;
                     var Client = new WebClient();
@@ -513,7 +490,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                             {
                                 if (num == 0uL)
                                 {
-                                    num3 += (long)int.Parse(xmlNode3.InnerText);
+                                    Sub_Index_Hash_Length += (long)int.Parse(xmlNode3.InnerText);
                                 }
                                 num5 += (long)int.Parse(xmlNode3.InnerText);
                                 num11 += int.Parse(xmlNode3.InnerText);
@@ -522,13 +499,13 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                             {
                                 if (num == 0uL)
                                 {
-                                    num3 += (long)num15;
+                                    Sub_Index_Hash_Length += (long)num15;
                                 }
                                 num5 += (long)num15;
                                 num11 += num15;
                             }
 
-                            Updated_Progress(num3, num4, num2, text6);
+                            Updated_Progress(Sub_Index_Hash_Length, Header_Length_Compressed, Header_Length, text6);
 
                             int num17 = int.Parse(xmlNode2.SelectSingleNode("section").InnerText);
                             if (num13 != num17)
@@ -580,7 +557,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                     num13 = num6;
                                     num5 += (long)array2.Length;
                                     num6++;
-                                    if (!this.MDownloadManager.GetStatus(string.Format("{0}/section{1}.dat", text, num6)).HasValue && num5 < num4)
+                                    if (!this.MDownloadManager.GetStatus(string.Format("{0}/section{1}.dat", text, num6)).HasValue && num5 < Header_Length_Compressed)
                                     {
                                         this.MDownloadManager.ScheduleFile(string.Format("{0}/section{1}.dat", text, num6));
                                     }
@@ -615,10 +592,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                     }
                                     num11 += num20;
                                     k += num20;
-                                    num3 += (long)num20;
+                                    Sub_Index_Hash_Length += (long)num20;
                                 }
 
-                                Updated_Progress(num3, num4, num2, text6);
+                                Updated_Progress(Sub_Index_Hash_Length, Header_Length_Compressed, Header_Length, text6);
                             }
                             if (xmlNode3 != null)
                             {
@@ -652,11 +629,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                 int num24 = Download_LZMA.LzmaUncompressBuf2File(text6, ref value, array3, ref intPtr, array5, outPropsSize);
 
                                 /* TODO: use total file lenght and extracted file length instead of files checked and total array size. */
-                                fileschecked = +num3;
+                                fileschecked =+ Sub_Index_Hash_Length;
 
                                 if (this.Live_Extract != null && !MStopFlag)
                                 {
-                                    this.Live_Extract(this, new Download_Extract_Progress_EventArgs(text6, num4, fileschecked, DateTime.Now));
+                                    this.Live_Extract(this, new Download_Extract_Progress_EventArgs(text6, Header_Length_Compressed, fileschecked, DateTime.Now));
                                 }
 
                                 if (num24 != 0)
@@ -741,7 +718,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 }
                 else
                 {
-                    long num = long.Parse(indexFile.SelectSingleNode("/index/header/length").InnerText);
+                    long Total_Length = long.Parse(indexFile.SelectSingleNode("/index/header/length").InnerText);
 
                     var Client = new WebClient();
 
@@ -757,13 +734,13 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                     XmlNodeList xmlNodeList = indexFile.SelectNodes("/index/fileinfo");
                     Download_LZMA_Data_Hash.Live_Instance.Clear();
                     Download_LZMA_Data_Hash.Live_Instance.Start(indexFile, text2, text + ".hsh", this.MHashThreads);
-                    long num2 = 0L;
-                    ulong num3 = 0uL;
-                    ulong num4 = 0uL;
+                    long Total_Current_Length = 0;
+                    ulong num3 = 0;
+                    ulong num4 = 0;
                     foreach (XmlNode xmlNode in xmlNodeList)
                     {
                         string text3 = xmlNode.SelectSingleNode("path").InnerText;
-                        string innerText = xmlNode.SelectSingleNode("file").InnerText;
+                        string File_Name_On_Record = xmlNode.SelectSingleNode("file").InnerText;
                         if (!string.IsNullOrWhiteSpace(text2))
                         {
                             int num5 = text3.IndexOf("/");
@@ -776,8 +753,8 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                 text3 = text2;
                             }
                         }
-                        string text4 = text3 + "/" + innerText;
-                        int num6 = int.Parse(xmlNode.SelectSingleNode("length").InnerText);
+                        string text4 = text3 + "/" + File_Name_On_Record;
+                        long Add_Length = long.Parse(xmlNode.SelectSingleNode("length").InnerText);
                         if (xmlNode.SelectSingleNode("hash") != null)
                         {
                             if (!Download_LZMA_Data_Hash.Live_Instance.HashesMatch(text4))
@@ -814,9 +791,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                         {
                             return;
                         }
-                        num2 += (long)num6;
 
-                        Updated_Progress(num2, 0, num, innerText);
+                        Total_Current_Length += Add_Length;
+
+                        Updated_Progress(Total_Current_Length, Total_Length, 0, File_Name_On_Record);
                     }
                     if (flag3)
                     {

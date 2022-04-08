@@ -65,7 +65,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_.EventArg_
             }
             else
             {
-                return (long)decimal.Divide(Numerator, Denominator);
+                return Numerator/Denominator;
             }
         }
         /// <summary>
