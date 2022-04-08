@@ -122,9 +122,8 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// </summary>
         /// <param name="Download_Current"></param>
         /// <param name="Compressed_Length"></param>
-        /// <param name="Download_Length"></param>
         /// <param name="Download_File_Name"></param>
-        private void Updated_Progress(long Download_Current, long Compressed_Length, long Download_Length = 0, string Download_File_Name = "")
+        private void Updated_Progress(long Download_Current, long Compressed_Length, string Download_File_Name = "")
         {
             try
             {
@@ -132,7 +131,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 {
                     long Some_Quick_Division = Numbers.Division_Check(Download_Current, Compressed_Length);
                     this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_Current, Compressed_Length,
-                        Download_Length, Some_Quick_Division, Numbers.Division_Check(Download_Current, Download_Length), Numbers.Download_Percentage_Check(Some_Quick_Division), DateTime.Now));
+                        Some_Quick_Division, (int)Some_Quick_Division*100, DateTime.Now));
                 }
             }
             catch (Exception)
@@ -505,7 +504,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                 num11 += num15;
                             }
 
-                            Updated_Progress(Sub_Index_Hash_Length, Header_Length_Compressed, Header_Length, text6);
+                            Updated_Progress(Sub_Index_Hash_Length, Header_Length_Compressed, text6);
 
                             int num17 = int.Parse(xmlNode2.SelectSingleNode("section").InnerText);
                             if (num13 != num17)
@@ -595,7 +594,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                     Sub_Index_Hash_Length += (long)num20;
                                 }
 
-                                Updated_Progress(Sub_Index_Hash_Length, Header_Length_Compressed, Header_Length, text6);
+                                Updated_Progress(Sub_Index_Hash_Length, Header_Length_Compressed, text6);
                             }
                             if (xmlNode3 != null)
                             {
@@ -794,7 +793,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
 
                         Total_Current_Length += Add_Length;
 
-                        Updated_Progress(Total_Current_Length, Total_Length, 0, File_Name_On_Record);
+                        Updated_Progress(Total_Current_Length, Total_Length, File_Name_On_Record);
                     }
                     if (flag3)
                     {

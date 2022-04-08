@@ -18,23 +18,15 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_.EventArg_
         /// <summary>
         /// 
         /// </summary>
-        public long File_Size_Total { get; internal set; }
+        public long Bytes_To_Receive_Total { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
-        public long File_Size_Total_Uncompressed { get; internal set; }
+        public long Bytes_Received { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
-        public long File_Size_Current { get; internal set; }
-        /// <summary>
-        /// 
-        /// </summary>
-        public long File_Size_Current_Divide_Total { get; internal set; }
-        /// <summary>
-        /// 
-        /// </summary>
-        public long File_Size_Current_Divide_Total_Uncompressed { get; internal set; }
+        public long Bytes_Received_Over_Total { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
@@ -42,16 +34,18 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_.EventArg_
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="Received_File_Size_Total"></param>
-        /// <param name="Received_File_Size_Current"></param>
+        /// <param name="Received_Bytes_Current"></param>
+        /// <param name="Received_Bytes_Total"></param>
+        /// <param name="Calulated_Current_Divide_Total"></param>
+        /// <param name="Calulated_Percentage"></param>
         /// <param name="Received_Start_Time"></param>
-        public Download_Data_Progress_EventArgs(long Received_File_Size_Current, long Received_File_Size_Total, long Received_File_Size_Total_Uncompressed, long Calulated_Current_Divide_Total, long Calulated_Current_Divide_Total_Uncompressed, int Calulated_Percentage, DateTime Received_Start_Time)
+        public Download_Data_Progress_EventArgs(long Received_Bytes_Current, long Received_Bytes_Total, long Calulated_Current_Divide_Total, int Calulated_Percentage, DateTime Received_Start_Time)
         {
-            this.File_Size_Total = Received_File_Size_Total;
-            this.File_Size_Current = Received_File_Size_Current;
+            this.Bytes_To_Receive_Total = Received_Bytes_Total;
+            this.Bytes_Received = Received_Bytes_Current;
             this.Download_Percentage = Calulated_Percentage;
             this.Start_Time = Received_Start_Time;
-            this.File_Size_Current_Divide_Total = Calulated_Current_Divide_Total;
+            this.Bytes_Received_Over_Total = Calulated_Current_Divide_Total;
         }
     }
 }
