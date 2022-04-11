@@ -20,7 +20,7 @@
             }
             else
             {
-                return Numerator / (decimal)Denominator;
+                return decimal.Divide(Numerator, Denominator);
             }
         }
     }

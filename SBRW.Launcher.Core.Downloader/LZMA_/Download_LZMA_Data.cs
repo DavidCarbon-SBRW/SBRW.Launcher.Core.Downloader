@@ -129,9 +129,9 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             {
                 if (this.Live_Progress != null && !MStopFlag)
                 {
-                    long Some_Quick_Division = Convert.ToInt64(Numbers.Division_Check(Download_Current, Compressed_Length));
+                    long Some_Quick_Division = decimal.ToInt64(Numbers.Division_Check(Download_Current, Compressed_Length));
                     this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_Current, Compressed_Length,
-                        Some_Quick_Division, (int)Some_Quick_Division*100, Download_File_Name, DateTime.Now));
+                        Some_Quick_Division, Convert.ToInt32(Some_Quick_Division)*100, Download_File_Name, DateTime.Now));
                 }
             }
             catch (Exception)
