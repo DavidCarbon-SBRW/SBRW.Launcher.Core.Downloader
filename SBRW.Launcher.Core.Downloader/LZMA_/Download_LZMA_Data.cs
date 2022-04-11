@@ -129,9 +129,9 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             {
                 if (this.Live_Progress != null && !MStopFlag)
                 {
-                    long Some_Quick_Division = Numbers.Division_Check(Download_Current, Compressed_Length);
+                    long Some_Quick_Division = Convert.ToInt64(Numbers.Division_Check(Download_Current, Compressed_Length));
                     this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_Current, Compressed_Length,
-                        Some_Quick_Division, (int)Some_Quick_Division*100, DateTime.Now));
+                        Some_Quick_Division, (int)Some_Quick_Division*100, Download_File_Name, DateTime.Now));
                 }
             }
             catch (Exception)
@@ -326,7 +326,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 else
                 {
                     long Header_Length = long.Parse(indexFile.SelectSingleNode("/index/header/length").InnerText);
-                    long Sub_Index_Hash_Length = 0;
+                    long Sub_Index_Hash_Length = 0L;
                     long Header_Length_Compressed;
                     if (num == 0uL)
                     {

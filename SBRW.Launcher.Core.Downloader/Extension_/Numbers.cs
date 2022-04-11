@@ -12,15 +12,15 @@
         /// <param name="Numerator"></param>
         /// <param name="Denominator"></param>
         /// <returns></returns>
-        public static long Division_Check(long Numerator, long Denominator)
+        public static decimal Division_Check(long Numerator, long Denominator)
         {
-            if (Denominator <= 0)
+            if (Denominator == 0)
             {
                 return -1;
             }
             else
             {
-                return Numerator/Denominator;
+                return Numerator / (decimal)Denominator;
             }
         }
     }
