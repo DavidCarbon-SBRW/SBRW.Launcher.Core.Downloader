@@ -85,6 +85,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// <summary>
         /// 
         /// </summary>
+        public DateTime? Progress_Start_Time { get; internal set; }
+        /// <summary>
+        /// 
+        /// </summary>
         public bool Downloading
         {
             get { return this.MDownloading; }
@@ -129,9 +133,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             {
                 if (this.Live_Progress != null && !MStopFlag)
                 {
-                    long Some_Quick_Division = decimal.ToInt64(Numbers.Division_Check(Download_Current, Compressed_Length));
-                    this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_Current, Compressed_Length,
-                        Some_Quick_Division, Convert.ToInt32(Some_Quick_Division)*100, Download_File_Name, DateTime.Now));
+                    this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_Current, Compressed_Length, Download_File_Name, Progress_Start_Time??DateTime.Now));
                 }
             }
             catch (Exception)
@@ -147,7 +149,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// 
         /// </summary>
         /// <param name="fe"></param>
-        public Download_LZMA_Data(ISynchronizeInvoke fe) : this(fe, 3, 3, 16)
+        public Download_LZMA_Data(ISynchronizeInvoke fe) : this(fe, 3, 3, 16, DateTime.Now)
         {
         }
         /// <summary>
@@ -157,9 +159,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// <param name="hashThreads"></param>
         /// <param name="downloadThreads"></param>
         /// <param name="downloadChunks"></param>
-        public Download_LZMA_Data(ISynchronizeInvoke fe, int hashThreads, int downloadThreads, int downloadChunks)
+        /// <param name="Start_Time"></param>
+        public Download_LZMA_Data(ISynchronizeInvoke fe, int hashThreads, int downloadThreads, int downloadChunks, DateTime Start_Time)
         {
             this.MHashThreads = hashThreads;
+            this.Progress_Start_Time = Start_Time;
             this.MDownloadManager = new Download_LZMA_Data_Manager(downloadThreads, downloadChunks);
         }
         /// <summary>
@@ -632,7 +636,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
 
                                 if (this.Live_Extract != null && !MStopFlag)
                                 {
-                                    this.Live_Extract(this, new Download_Extract_Progress_EventArgs(text6, Header_Length_Compressed, fileschecked, DateTime.Now));
+                                    this.Live_Extract(this, new Download_Extract_Progress_EventArgs(text6, Header_Length_Compressed, fileschecked, Progress_Start_Time??DateTime.Now));
                                 }
 
                                 if (num24 != 0)
