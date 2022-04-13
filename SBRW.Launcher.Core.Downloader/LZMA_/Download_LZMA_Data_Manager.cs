@@ -7,18 +7,27 @@ using System.Net.Cache;
 using System.Threading;
 using System.Xml;
 
-namespace SBRW.Launcher.Core.Downloader.LZMA
+namespace SBRW.Launcher.Core.Downloader.LZMA_
 {
-    internal class Download_LZMA_Data_Manager
+    /// <summary>
+    /// 
+    /// </summary>
+    public class Download_LZMA_Data_Manager
     {
-        public int MaxWorkers { get { return 3; } }
-        public int MaxActiveChunks { get { return 16; } }
-        private static int Worker_Count { get; set; }
-        private int Workers_Max { get; set; }
-        private Dictionary<string, Download_LZMA_Data_Manager.DownloadItem> Download_List { get; set; }
+        private int Worker_Count { get; set; }
+        /// <summary>
+        /// Max Background Workers in an Instance
+        /// </summary>
+        /// <remarks>Default is 3</remarks>
+        public int Workers_Max { get; set; } = 3;
+        private Dictionary<string, DownloadItem> Download_List { get; set; }
         private LinkedList<string> Download_Queue { get; set; }
         private List<BackgroundWorker> Workers_Live { get; set; }
-        private int Free_Chunks { get; set; }
+        /// <summary>
+        /// Max Active Chunks in an Instance
+        /// </summary>
+        /// <remarks>Default is 16</remarks>
+        public int Active_Chunks_Max { get; set; } = 16;
         private object Free_ChunksLock { get; set; }
         private bool Manager_Running { get; set; }
         /// <summary>
@@ -27,11 +36,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         public bool ManagerRunning
         {
             get { return this.Manager_Running; }
-        }
-
-        static Download_LZMA_Data_Manager()
-        {
-            Download_LZMA_Data_Manager.Worker_Count = 0;
         }
         /// <summary>
         /// 
@@ -47,12 +51,16 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         public Download_LZMA_Data_Manager(int maxWorkers, int maxActiveChunks)
         {
             this.Workers_Max = maxWorkers;
-            this.Free_Chunks = maxActiveChunks;
-            this.Download_List = new Dictionary<string, Download_LZMA_Data_Manager.DownloadItem>();
+            this.Active_Chunks_Max = maxActiveChunks;
+            this.Download_List = new Dictionary<string, DownloadItem>();
             this.Download_Queue = new LinkedList<string>();
             this.Workers_Live = new List<BackgroundWorker>();
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void BackgroundWorker_DoWork(object sender, DoWorkEventArgs args)
         {
             try
@@ -66,7 +74,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                         webClient.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
                         while (true)
                         {
-                            if (this.Free_Chunks <= 0)
+                            if (this.Active_Chunks_Max <= 0)
                             {
                                 Thread.Sleep(100);
                             }
@@ -80,7 +88,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                         {
                                             this.Workers_Live.Remove((BackgroundWorker)sender);
                                         }
-                                        Download_LZMA_Data_Manager.Worker_Count--;
+                                        this.Worker_Count--;
                                         break;
                                     }
                                 }
@@ -91,14 +99,14 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                     this.Download_Queue.RemoveLast();
                                     lock (this.Free_ChunksLock)
                                     {
-                                        this.Free_Chunks--;
+                                        this.Active_Chunks_Max--;
                                     }
                                 }
                                 lock (this.Download_List[value])
                                 {
-                                    if (this.Download_List[value].Status != Download_LZMA_Data_Manager.DownloadStatus.Canceled)
+                                    if (this.Download_List[value].Status != DownloadStatus.Canceled)
                                     {
-                                        this.Download_List[value].Status = Download_LZMA_Data_Manager.DownloadStatus.Downloading;
+                                        this.Download_List[value].Status = DownloadStatus.Downloading;
                                     }
                                 }
                                 while (webClient.IsBusy)
@@ -106,26 +114,26 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                     Thread.Sleep(100);
                                 }
                                 webClient.DownloadDataAsync(new Uri(value), value);
-                                Download_LZMA_Data_Manager.DownloadStatus status = Download_LZMA_Data_Manager.DownloadStatus.Downloading;
-                                while (status == Download_LZMA_Data_Manager.DownloadStatus.Downloading)
+                                DownloadStatus status = DownloadStatus.Downloading;
+                                while (status == DownloadStatus.Downloading)
                                 {
                                     status = this.Download_List[value].Status;
-                                    if (status == Download_LZMA_Data_Manager.DownloadStatus.Canceled)
+                                    if (status == DownloadStatus.Canceled)
                                     {
                                         break;
                                     }
                                     Thread.Sleep(100);
                                 }
-                                if (status == Download_LZMA_Data_Manager.DownloadStatus.Canceled)
+                                if (status == DownloadStatus.Canceled)
                                 {
                                     webClient.CancelAsync();
                                 }
                                 lock (this.Workers_Live)
                                 {
-                                    if (Download_LZMA_Data_Manager.Worker_Count > this.Workers_Max || !this.Manager_Running)
+                                    if (Worker_Count > this.Workers_Max || !this.Manager_Running)
                                     {
                                         this.Workers_Live.Remove((BackgroundWorker)sender);
-                                        Download_LZMA_Data_Manager.Worker_Count--;
+                                        Worker_Count--;
                                         break;
                                     }
                                 }
@@ -141,7 +149,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                         webClient.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
                         while (true)
                         {
-                            if (this.Free_Chunks <= 0)
+                            if (this.Active_Chunks_Max <= 0)
                             {
                                 Thread.Sleep(100);
                             }
@@ -155,7 +163,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                         {
                                             this.Workers_Live.Remove((BackgroundWorker)sender);
                                         }
-                                        Download_LZMA_Data_Manager.Worker_Count--;
+                                        Worker_Count--;
                                         break;
                                     }
                                 }
@@ -166,14 +174,14 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                     this.Download_Queue.RemoveLast();
                                     lock (this.Free_ChunksLock)
                                     {
-                                        this.Free_Chunks--;
+                                        this.Active_Chunks_Max--;
                                     }
                                 }
                                 lock (this.Download_List[value])
                                 {
-                                    if (this.Download_List[value].Status != Download_LZMA_Data_Manager.DownloadStatus.Canceled)
+                                    if (this.Download_List[value].Status != DownloadStatus.Canceled)
                                     {
-                                        this.Download_List[value].Status = Download_LZMA_Data_Manager.DownloadStatus.Downloading;
+                                        this.Download_List[value].Status = DownloadStatus.Downloading;
                                     }
                                 }
                                 while (webClient.IsBusy)
@@ -181,26 +189,26 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                     Thread.Sleep(100);
                                 }
                                 webClient.DownloadDataAsync(new Uri(value), value);
-                                Download_LZMA_Data_Manager.DownloadStatus status = Download_LZMA_Data_Manager.DownloadStatus.Downloading;
-                                while (status == Download_LZMA_Data_Manager.DownloadStatus.Downloading)
+                                DownloadStatus status = DownloadStatus.Downloading;
+                                while (status == DownloadStatus.Downloading)
                                 {
                                     status = this.Download_List[value].Status;
-                                    if (status == Download_LZMA_Data_Manager.DownloadStatus.Canceled)
+                                    if (status == DownloadStatus.Canceled)
                                     {
                                         break;
                                     }
                                     Thread.Sleep(100);
                                 }
-                                if (status == Download_LZMA_Data_Manager.DownloadStatus.Canceled)
+                                if (status == DownloadStatus.Canceled)
                                 {
                                     webClient.CancelAsync();
                                 }
                                 lock (this.Workers_Live)
                                 {
-                                    if (Download_LZMA_Data_Manager.Worker_Count > this.Workers_Max || !this.Manager_Running)
+                                    if (Worker_Count > this.Workers_Max || !this.Manager_Running)
                                     {
                                         this.Workers_Live.Remove((BackgroundWorker)sender);
-                                        Download_LZMA_Data_Manager.Worker_Count--;
+                                        Worker_Count--;
                                         break;
                                     }
                                 }
@@ -214,18 +222,24 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                 lock (this.Workers_Live)
                 {
                     this.Workers_Live.Remove((BackgroundWorker)sender);
-                    Download_LZMA_Data_Manager.Worker_Count--;
+                    Worker_Count--;
                 }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void BackgroundWorker_RunWorkerComplete(object sender, RunWorkerCompletedEventArgs e)
         {
             if (e.Error != null)
             {
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public void CancelAllDownloads()
         {
             this.Stop();
@@ -241,15 +255,18 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     {
                         lock (this.Free_ChunksLock)
                         {
-                            this.Free_Chunks++;
+                            this.Active_Chunks_Max++;
                         }
                     }
-                    this.Download_List[key].Status = Download_LZMA_Data_Manager.DownloadStatus.Canceled;
+                    this.Download_List[key].Status = DownloadStatus.Canceled;
                     this.Download_List[key].Data = null;
                 }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fileName"></param>
         public void CancelDownload(string fileName)
         {
             lock (this.Download_Queue)
@@ -267,19 +284,21 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     {
                         lock (this.Free_ChunksLock)
                         {
-                            this.Free_Chunks++;
+                            this.Active_Chunks_Max++;
                         }
                     }
-                    this.Download_List[fileName].Status = Download_LZMA_Data_Manager.DownloadStatus.Canceled;
+                    this.Download_List[fileName].Status = DownloadStatus.Canceled;
                     this.Download_List[fileName].Data = null;
                 }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public void Clear()
         {
             this.CancelAllDownloads();
-            while (Download_LZMA_Data_Manager.Worker_Count > 0)
+            while (Worker_Count > 0)
             {
                 Thread.Sleep(100);
             }
@@ -288,7 +307,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                 this.Download_List.Clear();
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void DownloadManager_DownloadDataCompleted(object sender, DownloadDataCompletedEventArgs e)
         {
             string str = e.UserState.ToString();
@@ -300,15 +323,15 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     {
                         lock (this.Download_List[str])
                         {
-                            if (this.Download_List[str].Status == Download_LZMA_Data_Manager.DownloadStatus.Canceled || this.Workers_Max <= 1)
+                            if (this.Download_List[str].Status == DownloadStatus.Canceled || this.Workers_Max <= 1)
                             {
                                 this.Download_List[str].Data = null;
-                                this.Download_List[str].Status = Download_LZMA_Data_Manager.DownloadStatus.Canceled;
+                                this.Download_List[str].Status = DownloadStatus.Canceled;
                             }
                             else
                             {
                                 this.Download_List[str].Data = null;
-                                this.Download_List[str].Status = Download_LZMA_Data_Manager.DownloadStatus.Queued;
+                                this.Download_List[str].Status = DownloadStatus.Queued;
                                 lock (this.Download_Queue)
                                 {
                                     this.Download_Queue.AddLast(str);
@@ -323,33 +346,37 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                 }
                 lock (this.Free_ChunksLock)
                 {
-                    this.Free_Chunks++;
+                    this.Active_Chunks_Max++;
                 }
             }
             else
             {
                 lock (this.Download_List[str])
                 {
-                    if (this.Download_List[str].Status != Download_LZMA_Data_Manager.DownloadStatus.Downloaded)
+                    if (this.Download_List[str].Status != DownloadStatus.Downloaded)
                     {
                         this.Download_List[str].Data = new byte[(int)e.Result.Length];
                         Buffer.BlockCopy(e.Result, 0, this.Download_List[str].Data, 0, (int)e.Result.Length);
-                        this.Download_List[str].Status = Download_LZMA_Data_Manager.DownloadStatus.Downloaded;
+                        this.Download_List[str].Status = DownloadStatus.Downloaded;
                     }
                 }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
         public byte[] GetFile(string fileName)
         {
-            Download_LZMA_Data_Manager.DownloadStatus status;
+            DownloadStatus status;
             byte[] data = null;
             this.ScheduleFile(fileName);
             lock (this.Download_List[fileName])
             {
                 status = this.Download_List[fileName].Status;
             }
-            while (status != Download_LZMA_Data_Manager.DownloadStatus.Downloaded && status != Download_LZMA_Data_Manager.DownloadStatus.Canceled)
+            while (status != DownloadStatus.Downloaded && status != DownloadStatus.Canceled)
             {
                 Thread.Sleep(100);
                 lock (this.Download_List[fileName])
@@ -357,7 +384,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     status = this.Download_List[fileName].Status;
                 }
             }
-            if (this.Download_List[fileName].Status == Download_LZMA_Data_Manager.DownloadStatus.Downloaded)
+            if (this.Download_List[fileName].Status == DownloadStatus.Downloaded)
             {
                 lock (this.Download_List[fileName])
                 {
@@ -365,14 +392,18 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     this.Download_List[fileName].Data = null;
                     lock (this.Free_ChunksLock)
                     {
-                        this.Free_Chunks++;
+                        this.Active_Chunks_Max++;
                     }
                 }
             }
             return data;
         }
-
-        public Download_LZMA_Data_Manager.DownloadStatus? GetStatus(string fileName)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public DownloadStatus? GetStatus(string fileName)
         {
             if (!this.Download_List.ContainsKey(fileName))
             {
@@ -380,7 +411,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
             }
             return new Download_LZMA_Data_Manager.DownloadStatus?(this.Download_List[fileName].Status);
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="doc"></param>
+        /// <param name="serverPath"></param>
         public void Initialize(XmlDocument doc, string serverPath)
         {
             this.Free_ChunksLock = new object();
@@ -400,21 +435,24 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                 string str1 = string.Format("{0}/section{1}.dat", serverPath, i);
                 if (!this.Download_List.ContainsKey(str1))
                 {
-                    this.Download_List.Add(str1, new Download_LZMA_Data_Manager.DownloadItem());
+                    this.Download_List.Add(str1, new DownloadItem());
                 }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fileName"></param>
         public void ScheduleFile(string fileName)
         {
             if (this.Download_List.ContainsKey(fileName))
             {
-                Download_LZMA_Data_Manager.DownloadStatus status = Download_LZMA_Data_Manager.DownloadStatus.Queued;
+                DownloadStatus status = DownloadStatus.Queued;
                 lock (this.Download_List[fileName])
                 {
                     status = this.Download_List[fileName].Status;
                 }
-                if (status != Download_LZMA_Data_Manager.DownloadStatus.Queued && status != Download_LZMA_Data_Manager.DownloadStatus.Canceled)
+                if (status != DownloadStatus.Queued && status != DownloadStatus.Canceled)
                 {
                     return;
                 }
@@ -432,18 +470,18 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                 }
                 lock (this.Download_List[fileName])
                 {
-                    this.Download_List[fileName].Status = Download_LZMA_Data_Manager.DownloadStatus.Queued;
+                    this.Download_List[fileName].Status = DownloadStatus.Queued;
                 }
             }
             else
             {
-                this.Download_List.Add(fileName, new Download_LZMA_Data_Manager.DownloadItem());
+                this.Download_List.Add(fileName, new DownloadItem());
                 lock (this.Download_Queue)
                 {
                     this.Download_Queue.AddLast(fileName);
                 }
             }
-            if (this.Manager_Running && Download_LZMA_Data_Manager.Worker_Count < this.Workers_Max)
+            if (this.Manager_Running && Worker_Count < this.Workers_Max)
             {
                 lock (this.Workers_Live)
                 {
@@ -452,51 +490,68 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(this.BackgroundWorker_RunWorkerComplete);
                     backgroundWorker.RunWorkerAsync();
                     this.Workers_Live.Add(backgroundWorker);
-                    Download_LZMA_Data_Manager.Worker_Count++;
+                    Worker_Count++;
                 }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public void Start()
         {
             this.Manager_Running = true;
             lock (this.Workers_Live)
             {
-                while (Download_LZMA_Data_Manager.Worker_Count < this.Workers_Max)
+                while (Worker_Count < this.Workers_Max)
                 {
                     BackgroundWorker backgroundWorker = new BackgroundWorker();
                     backgroundWorker.DoWork += new DoWorkEventHandler(this.BackgroundWorker_DoWork);
                     backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(this.BackgroundWorker_RunWorkerComplete);
                     backgroundWorker.RunWorkerAsync();
                     this.Workers_Live.Add(backgroundWorker);
-                    Download_LZMA_Data_Manager.Worker_Count++;
+                    Worker_Count++;
                 }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public void Stop()
         {
             this.Manager_Running = false;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
         private class DownloadItem
         {
-            public Download_LZMA_Data_Manager.DownloadStatus Status;
-
+            /// <summary>
+            /// 
+            /// </summary>
+            public DownloadStatus Status;
+            /// <summary>
+            /// 
+            /// </summary>
             private byte[] _data;
-
+            /// <summary>
+            /// 
+            /// </summary>
             public byte[] Data
             {
                 get { return this._data; }
                 set { this._data = value; }
             }
-
+            /// <summary>
+            /// 
+            /// </summary>
             public DownloadItem()
             {
-                this.Status = Download_LZMA_Data_Manager.DownloadStatus.Queued;
+                this.Status = DownloadStatus.Queued;
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public enum DownloadStatus
         {
             Queued,

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace SBRW.Launcher.Core.Downloader.LZMA
+namespace SBRW.Launcher.Core.Downloader.LZMA_
 {
     /// <summary>
     /// 

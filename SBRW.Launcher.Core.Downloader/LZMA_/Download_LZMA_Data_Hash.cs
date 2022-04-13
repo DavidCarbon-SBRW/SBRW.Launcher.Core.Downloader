@@ -7,29 +7,43 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 
-namespace SBRW.Launcher.Core.Downloader.LZMA
+namespace SBRW.Launcher.Core.Downloader.LZMA_
 {
-    internal class Download_LZMA_Data_Hash
+    /// <summary>
+    /// 
+    /// </summary>
+    public class Download_LZMA_Data_Hash
     {
-        public int MaxWorkers { get { return 3; } }
-        public string HashFileName { get { return "HashFile"; } }
+        /// <summary>
+        /// 
+        /// </summary>
         public Dictionary<string, Download_LZMA_Data_Hash_Tuple> File_List { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         public Queue<string> Queue_Hash { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         public static object Queue_Hash_Lock { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         public static int Worker_Count { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         public bool Use_Cache { get; set; } = true;
+        /// <summary>
+        /// 
+        /// </summary>
         public static Download_LZMA_Data_Hash Live_Instance { get; set; }
-
-        internal static Download_LZMA_Data_Hash Instance
-        {
-            get { return Download_LZMA_Data_Hash.Live_Instance; }
-        }
 
         static Download_LZMA_Data_Hash()
         {
-            Download_LZMA_Data_Hash.Queue_Hash_Lock = new object();
-            Download_LZMA_Data_Hash.Worker_Count = 0;
-            Download_LZMA_Data_Hash.Live_Instance = new Download_LZMA_Data_Hash();
+            Queue_Hash_Lock = new object();
+            Worker_Count = 0;
+            Live_Instance = new Download_LZMA_Data_Hash();
         }
 
         private Download_LZMA_Data_Hash()
@@ -43,16 +57,16 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         {
             while (true)
             {
-                lock (Download_LZMA_Data_Hash.Queue_Hash_Lock)
+                lock (Queue_Hash_Lock)
                 {
                     if (this.Queue_Hash.Count == 0)
                     {
-                        Download_LZMA_Data_Hash.Worker_Count--;
+                        Worker_Count--;
                         break;
                     }
                 }
                 string str = string.Empty;
-                lock (Download_LZMA_Data_Hash.Queue_Hash_Lock)
+                lock (Queue_Hash_Lock)
                 {
                     str = this.Queue_Hash.Dequeue();
                 }
@@ -100,7 +114,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
             {
                 this.Queue_Hash.Clear();
             }
-            while (Download_LZMA_Data_Hash.Worker_Count > 0)
+            while (Worker_Count > 0)
             {
                 Thread.Sleep(100);
             }
@@ -258,14 +272,14 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     File.Delete(string.Concat("HashFile", hashFileNameSuffix));
                 }
             }
-            Download_LZMA_Data_Hash.Worker_Count = 0;
-            while (Download_LZMA_Data_Hash.Worker_Count < maxWorkers && this.Queue_Hash.Count > 0)
+            Worker_Count = 0;
+            while (Worker_Count < maxWorkers && this.Queue_Hash.Count > 0)
             {
                 BackgroundWorker backgroundWorker = new BackgroundWorker();
                 backgroundWorker.DoWork += new DoWorkEventHandler(this.BackgroundWorker_DoWork);
                 backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(this.BackgroundWorker_RunWorkerComplete);
                 backgroundWorker.RunWorkerAsync();
-                Download_LZMA_Data_Hash.Worker_Count++;
+                Worker_Count++;
             }
         }
         /// <summary>

@@ -1,4 +1,7 @@
-﻿using SBRW.Launcher.Core.Downloader.Web_;
+﻿using SBRW.Launcher.Core.Downloader.Exception_;
+using SBRW.Launcher.Core.Downloader.Extension_;
+using SBRW.Launcher.Core.Downloader.LZMA_.EventArg_;
+using SBRW.Launcher.Core.Downloader.Web_;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,7 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 
-namespace SBRW.Launcher.Core.Downloader.LZMA
+namespace SBRW.Launcher.Core.Downloader.LZMA_
 {
     /// <summary>
     /// 
@@ -17,55 +20,72 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
     public class Download_LZMA_Data
     {
         /// <summary>
-        /// 
+        /// Time in Seconds before UI is Updated
         /// </summary>
-        public int LZMAOutPropsSize { get { return 5; } }
-        /// <summary>
-        /// 
-        /// </summary>
-        public int LZMALengthSize { get { return 8; } }
-        /// <summary>
-        /// 
-        /// </summary>
-        public int LZMAHeaderSize { get { return 13; } }
-        /// <summary>
-        /// 
-        /// </summary>
-        public int HashThreads { get { return 3; } }
-        /// <summary>
-        /// 
-        /// </summary>
-        public int DownloadThreads { get { return 3; } }
-        /// <summary>
-        /// 
-        /// </summary>
-        public int DownloadChunks { get { return 16; } }
-        /// <summary>
-        /// 
-        /// </summary>
-        public ISynchronizeInvoke MFE { get; set; }
+        /// <remarks>Default Value is 1000 (1 Second)</remarks>
+        public int Progress_Update_Frequency { get; set; } = 1000;
         private Thread MThread { get; set; }
-        private Download_LZMA_Delegates.Download_LZMA_Progress_Updated MProgressUpdated { get; set; }
-        private Download_LZMA_Delegates.Download_LZMA_Finished MDownloadFinished { get; set; }
-        private Download_LZMA_Delegates.Download_LZMA_Failed MDownloadFailed { get; set; }
-        private Download_LZMA_Delegates.Download_LZMA_Show_Message MShowMessage { get; set; }
-        private Download_LZMA_Delegates.Download_LZMA_Show_Extract MShowExtract { get; set; }
         /// <summary>
         /// 
         /// </summary>
-        public static string MCurrentLocalVersion { get; set; } = string.Empty;
+        /// <param name="Sender"></param>
+        /// <param name="Events"></param>
+        public delegate void Download_Data_Progress_Handler(object Sender, Download_Data_Progress_EventArgs Events);
         /// <summary>
         /// 
         /// </summary>
-        public static string MCurrentServerVersion { get; set; } = string.Empty;
+        public event Download_Data_Progress_Handler? Live_Progress;
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Sender"></param>
+        /// <param name="Events"></param>
+        public delegate void Download_Data_Completion_Handler(object Sender, Download_Data_Complete_EventArgs Events);
+        /// <summary>
+        /// 
+        /// </summary>
+        public event Download_Data_Completion_Handler? Complete;
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Sender"></param>
+        /// <param name="Events"></param>
+        public delegate void Download_Data_Exception_Handler(object Sender, Download_Exception_EventArgs Events);
+        /// <summary>
+        /// 
+        /// </summary>
+        public event Download_Data_Exception_Handler? Internal_Error;
+        /// <summary>
+        /// .
+        /// </summary>
+        public event Download_Data_Exception_Handler? Internal_Web_Error;
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Sender"></param>
+        /// <param name="Events"></param>
+        public delegate void Download_Data_Extract_Handler(object Sender, Download_Extract_Progress_EventArgs Events);
+        /// <summary>
+        /// 
+        /// </summary>
+        public event Download_Data_Extract_Handler? Live_Extract;
         private bool MDownloading { get; set; }
         /// <summary>
         /// 
         /// </summary>
-        public int MHashThreads { get; set; }
+        public int MHashThreads { get; internal set; }
         private Download_LZMA_Data_Manager MDownloadManager { get; set; }
         private static XmlDocument? MIndexCached { get; set; }
         private static bool MStopFlag { get; set; }
+        private XmlDocument? Xml_Result { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public DateTime? Progress_Last_Update { get; internal set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public DateTime? Progress_Start_Time { get; internal set; }
         /// <summary>
         /// 
         /// </summary>
@@ -76,55 +96,60 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         /// <summary>
         /// 
         /// </summary>
-        public Download_LZMA_Delegates.Download_LZMA_Progress_Updated ProgressUpdated
+        /// <param name="Event_Hook"></param>
+        /// <param name="Exception_Caught"></param>
+        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught)
         {
-            get { return this.MProgressUpdated; }
-            set { this.MProgressUpdated = value; }
+            try
+            {
+                if (this.Internal_Error != null && Event_Hook && !MStopFlag)
+                {
+                    this.Internal_Error(this, new Download_Exception_EventArgs(Exception_Caught, DateTime.Now));
+                }
+                else
+                {
+                    throw Exception_Caught;
+                }
+            }
+            finally
+            {
+                if (!MStopFlag)
+                {
+                    Stop();
+                }
+            }
         }
+        //@DavidCarbon and/or @Zacam
+        //long downloadLength, long downloadCurrent, long compressedLength, string filename = "", int skiptime = 0
         /// <summary>
-        /// 
+        /// long downloadLength, long downloadCurrent, long compressedLength, string filename = "", int skiptime = 0
         /// </summary>
-        public Download_LZMA_Delegates.Download_LZMA_Finished DownloadFinished
+        /// <param name="Download_Current"></param>
+        /// <param name="Compressed_Length"></param>
+        /// <param name="Download_File_Name"></param>
+        private void Updated_Progress(long Download_Current, long Compressed_Length, string Download_File_Name = "")
         {
-            get { return this.MDownloadFinished; }
-            set { this.MDownloadFinished = value; }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        public Download_LZMA_Delegates.Download_LZMA_Failed DownloadFailed
-        {
-            get { return this.MDownloadFailed; }
-            set { this.MDownloadFailed = value; }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        public Download_LZMA_Delegates.Download_LZMA_Show_Message ShowMessage
-        {
-            get { return this.MShowMessage; }
-            set { this.MShowMessage = value; }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        public Download_LZMA_Delegates.Download_LZMA_Show_Extract ShowExtract
-        {
-            get { return this.MShowExtract; }
-            set { this.MShowExtract = value; }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        public static string ServerVersion
-        {
-            get { return Download_LZMA_Data.MCurrentServerVersion; }
+            try
+            {
+                if (this.Live_Progress != null && !MStopFlag)
+                {
+                    this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_Current, Compressed_Length, Download_File_Name, Progress_Start_Time??DateTime.Now));
+                }
+            }
+            catch (Exception)
+            {
+
+            }
+            finally
+            {
+                GC.Collect();
+            }
         }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="fe"></param>
-        public Download_LZMA_Data(ISynchronizeInvoke fe) : this(fe, 3, 3, 16)
+        public Download_LZMA_Data(ISynchronizeInvoke fe) : this(fe, 3, 3, 16, DateTime.Now)
         {
         }
         /// <summary>
@@ -134,10 +159,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         /// <param name="hashThreads"></param>
         /// <param name="downloadThreads"></param>
         /// <param name="downloadChunks"></param>
-        public Download_LZMA_Data(ISynchronizeInvoke fe, int hashThreads, int downloadThreads, int downloadChunks)
+        /// <param name="Start_Time"></param>
+        public Download_LZMA_Data(ISynchronizeInvoke fe, int hashThreads, int downloadThreads, int downloadChunks, DateTime Start_Time)
         {
             this.MHashThreads = hashThreads;
-            this.MFE = fe;
+            this.Progress_Start_Time = Start_Time;
             this.MDownloadManager = new Download_LZMA_Data_Manager(downloadThreads, downloadChunks);
         }
         /// <summary>
@@ -151,7 +177,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         /// <param name="downloadSize"></param>
         public void StartDownload(string indexUrl, string package, string patchPath, bool calculateHashes, bool useIndexCache, int downloadSize)
         {
-            Download_LZMA_Data.MStopFlag = false;
+            MStopFlag = false;
             this.MThread = new Thread(new ParameterizedThreadStart(this.Download));
             string[] parameter = new string[]
             {
@@ -162,6 +188,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                 useIndexCache.ToString(),
                 downloadSize.ToString()
             };
+            this.MThread.IsBackground = true;
             this.MThread.Start(parameter);
         }
         /// <summary>
@@ -175,7 +202,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         /// <param name="writeHashes"></param>
         public void StartVerification(string indexUrl, string package, string patchPath, bool stopOnFail, bool clearHashes, bool writeHashes)
         {
-            Download_LZMA_Data.MStopFlag = false;
+            MStopFlag = false;
             this.MThread = new Thread(new ParameterizedThreadStart(this.Verify));
             string[] parameter = new string[]
             {
@@ -186,6 +213,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                 clearHashes.ToString(),
                 writeHashes.ToString()
             };
+            this.MThread.IsBackground = true;
             this.MThread.Start(parameter);
         }
         /// <summary>
@@ -193,35 +221,30 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         /// </summary>
         public void Stop()
         {
-            Download_LZMA_Data.MStopFlag = true;
+            MStopFlag = true;
             if (this.MDownloadManager != null && this.MDownloadManager.ManagerRunning)
             {
                 this.MDownloadManager.CancelAllDownloads();
             }
         }
 
-        private void Downloader_DownloadFileCompleted(object sender, DownloadDataCompletedEventArgs e)
+        private void Downloader_DownloadFileCompleted(object sender, DownloadDataCompletedEventArgs Live_Download_Data)
         {
-            if (!e.Cancelled && e.Error == null)
+            if (Live_Download_Data.Error != null && this.Internal_Web_Error != null && !MStopFlag)
             {
-                //Download_LZMA_Data.mLogger.DebugFormat("File '{0}' downloaded", arg);
-                return;
+                this.Internal_Web_Error(this, new Download_Exception_EventArgs(Live_Download_Data.Error, DateTime.Now));
             }
-            //MessageBox.Show("Error downloading file '" + arg + "'");
-            if (e.Error != null)
-            {
-                //MessageBox.Show("Downloader_DownloadFileCompleted Exception: " + e.Error.ToString());
-            }
+
+            GC.Collect();
         }
 
         private XmlDocument GetIndexFile(string url, bool useCache)
         {
-            XmlDocument? result;
             try
             {
-                if (useCache && Download_LZMA_Data.MIndexCached != null)
+                if (useCache && MIndexCached != null)
                 {
-                    result = Download_LZMA_Data.MIndexCached;
+                    Xml_Result = MIndexCached;
                 }
                 else
                 {
@@ -244,24 +267,24 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                         Client.DownloadFileAsync(URLCall, tempFileName);
                         while (Client.IsBusy)
                         {
-                            if (Download_LZMA_Data.MStopFlag)
+                            if (MStopFlag)
                             {
                                 Client.CancelAsync();
-                                result = null;
+                                Xml_Result = null;
 #pragma warning disable CS8603
-                                return result;
+                                return Xml_Result;
 #pragma warning restore CS8603
                             }
                             Thread.Sleep(100);
                         }
                         XmlDocument xmlDocument = new XmlDocument();
                         xmlDocument.Load(tempFileName);
-                        Download_LZMA_Data.MIndexCached = xmlDocument;
-                        result = xmlDocument;
+                        MIndexCached = xmlDocument;
+                        Xml_Result = xmlDocument;
                     }
                     catch (Exception)
                     {
-                        result = null;
+                        Xml_Result = null;
                     }
                     finally
                     {
@@ -274,10 +297,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
             }
             catch (Exception)
             {
-                result = null;
+                Xml_Result = null;
             }
 
-            return result?? new XmlDocument();
+            return Xml_Result ?? new XmlDocument();
         }
 
         private void Download(object parameters)
@@ -301,23 +324,21 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                 XmlDocument indexFile = this.GetIndexFile(text + "/index.xml", useCache);
                 if (indexFile == null)
                 {
-                    ISynchronizeInvoke arg_AE_0 = this.MFE;
-                    Delegate arg_AE_1 = this.MDownloadFailed;
-                    object[] args = new object[1];
-                    arg_AE_0.BeginInvoke(arg_AE_1, args);
+                    Exception_Router(true, new ArgumentNullException("indexFile", "Index File can not be Null"));
+                    return;
                 }
                 else
                 {
-                    long num2 = long.Parse(indexFile.SelectSingleNode("/index/header/length").InnerText);
-                    long num3 = 0L;
-                    long num4;
+                    long Header_Length = long.Parse(indexFile.SelectSingleNode("/index/header/length").InnerText);
+                    long Sub_Index_Hash_Length = 0L;
+                    long Header_Length_Compressed;
                     if (num == 0uL)
                     {
-                        num4 = long.Parse(indexFile.SelectSingleNode("/index/header/compressed").InnerText);
+                        Header_Length_Compressed = long.Parse(indexFile.SelectSingleNode("/index/header/compressed").InnerText);
                     }
                     else
                     {
-                        num4 = (long)num;
+                        Header_Length_Compressed = (long)num;
                     }
                     long num5 = 0L;
                     var Client = new WebClient();
@@ -337,8 +358,8 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     this.MDownloadManager.Initialize(indexFile, text);
                     if (flag)
                     {
-                        Download_LZMA_Data_Hash.Instance.Clear();
-                        Download_LZMA_Data_Hash.Instance.Start(indexFile, text3, text2 + ".hsh", this.MHashThreads);
+                        Download_LZMA_Data_Hash.Live_Instance.Clear();
+                        Download_LZMA_Data_Hash.Live_Instance.Start(indexFile, text3, text2 + ".hsh", this.MHashThreads);
                     }
                     int num7 = 0;
                     List<string> list = new List<string>();
@@ -388,7 +409,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                 i++;
                             }
                         }
-                        else if (!Download_LZMA_Data_Hash.Instance.HashesMatch(fileName))
+                        else if (!Download_LZMA_Data_Hash.Live_Instance.HashesMatch(fileName))
                         {
                             if (i <= num10)
                             {
@@ -438,7 +459,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     int num13 = 0;
                     foreach (XmlNode xmlNode2 in xmlNodeList)
                     {
-                        if (Download_LZMA_Data.MStopFlag)
+                        if (MStopFlag)
                         {
                             break;
                         }
@@ -465,14 +486,14 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                             num6 = int.Parse(xmlNode2.SelectSingleNode("section").InnerText);
                         }
                         string text7 = string.Empty;
-                        if (xmlNode2.SelectSingleNode("hash") != null && Download_LZMA_Data_Hash.Instance.HashesMatch(text6))
+                        if (xmlNode2.SelectSingleNode("hash") != null && Download_LZMA_Data_Hash.Live_Instance.HashesMatch(text6))
                         {
                             num16 += num15;
                             if (xmlNode3 != null)
                             {
                                 if (num == 0uL)
                                 {
-                                    num3 += (long)int.Parse(xmlNode3.InnerText);
+                                    Sub_Index_Hash_Length += (long)int.Parse(xmlNode3.InnerText);
                                 }
                                 num5 += (long)int.Parse(xmlNode3.InnerText);
                                 num11 += int.Parse(xmlNode3.InnerText);
@@ -481,24 +502,14 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                             {
                                 if (num == 0uL)
                                 {
-                                    num3 += (long)num15;
+                                    Sub_Index_Hash_Length += (long)num15;
                                 }
                                 num5 += (long)num15;
                                 num11 += num15;
                             }
-                            if (this.MProgressUpdated != null)
-                            {
-                                object[] args2 = new object[]
-                                {
-                                    num2,
-                                    num3,
-                                    num4,
-                                    text6,
-                                    0
-                                };
 
-                                this.MFE.Invoke(this.MProgressUpdated, args2);
-                            }
+                            Updated_Progress(Sub_Index_Hash_Length, Header_Length_Compressed, text6);
+
                             int num17 = int.Parse(xmlNode2.SelectSingleNode("section").InnerText);
                             if (num13 != num17)
                             {
@@ -543,29 +554,13 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                     array2 = this.MDownloadManager.GetFile(text7);
                                     if (array2 == null)
                                     {
-                                        if (this.MDownloadFailed != null)
-                                        {
-                                            if (!Download_LZMA_Data.MStopFlag)
-                                            {
-                                                this.MFE.BeginInvoke(this.MDownloadFailed, new object[]
-                                                {
-                                                    new Exception("DownloadManager returned a null buffer")
-                                                });
-                                            }
-                                            else
-                                            {
-                                                ISynchronizeInvoke arg_887_0 = this.MFE;
-                                                Delegate arg_887_1 = this.MDownloadFailed;
-                                                object[] args = new object[1];
-                                                arg_887_0.BeginInvoke(arg_887_1, args);
-                                            }
-                                        }
+                                        Exception_Router(true, new ArgumentNullException("array2", "DownloadManager returned a null buffer"));
                                         return;
                                     }
                                     num13 = num6;
                                     num5 += (long)array2.Length;
                                     num6++;
-                                    if (!this.MDownloadManager.GetStatus(string.Format("{0}/section{1}.dat", text, num6)).HasValue && num5 < num4)
+                                    if (!this.MDownloadManager.GetStatus(string.Format("{0}/section{1}.dat", text, num6)).HasValue && num5 < Header_Length_Compressed)
                                     {
                                         this.MDownloadManager.ScheduleFile(string.Format("{0}/section{1}.dat", text, num6));
                                     }
@@ -600,31 +595,17 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                     }
                                     num11 += num20;
                                     k += num20;
-                                    num3 += (long)num20;
+                                    Sub_Index_Hash_Length += (long)num20;
                                 }
-                                if (this.MProgressUpdated != null)
-                                {
-                                    try
-                                    {
-                                        object[] args3 = new object[]
-                                        {
-                                            num2,
-                                            num3,
-                                            num4,
-                                            text6,
-                                            0
-                                        };
 
-                                        this.MFE.BeginInvoke(this.MProgressUpdated, args3);
-                                    }
-                                    catch { }
-                                }
+                                Updated_Progress(Sub_Index_Hash_Length, Header_Length_Compressed, text6);
                             }
                             if (xmlNode3 != null)
                             {
-                                if (!Download_LZMA_Data.IsLzma(array4))
+                                if (!IsLzma(array4))
                                 {
-                                    throw new Download_LZMA_Exception("Compression algorithm not recognized: " + text7);
+                                    Exception_Router(true, new Download_LZMA_Exception("Compression algorithm not recognized: " + text7));
+                                    return;
                                 }
                                 fileStream.Close();
                                 fileStream.Dispose();
@@ -641,7 +622,8 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                 }
                                 if (num22 != (long)num15)
                                 {
-                                    throw new Download_LZMA_Exception("Compression data length in header '" + num22 + "' != than in metadata '" + num15 + "'");
+                                    Exception_Router(true, new Download_LZMA_Exception("Compression data length in header '" + num22 + "' != than in metadata '" + num15 + "'"));
+                                    return;
                                 }
                                 int num23 = num18;
                                 num18 -= 13;
@@ -650,22 +632,22 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                 int num24 = Download_LZMA.LzmaUncompressBuf2File(text6, ref value, array3, ref intPtr, array5, outPropsSize);
 
                                 /* TODO: use total file lenght and extracted file length instead of files checked and total array size. */
-                                fileschecked = +num3;
+                                fileschecked =+ Sub_Index_Hash_Length;
 
-                                try
+                                if (this.Live_Extract != null && !MStopFlag)
                                 {
-                                    object[] xxxxxx = new object[] { text6, fileschecked, num4 };
-                                    this.MFE.BeginInvoke(this.MShowExtract, xxxxxx);
+                                    this.Live_Extract(this, new Download_Extract_Progress_EventArgs(text6, Header_Length_Compressed, fileschecked, Progress_Start_Time??DateTime.Now));
                                 }
-                                catch { }
 
                                 if (num24 != 0)
                                 {
-                                    throw new Download_LZMA_Exception_Uncompression(num24, "Decompression returned " + num24);
+                                    Exception_Router(true, new Download_LZMA_Exception_Uncompression(num24, "Decompression returned " + num24));
+                                    return;
                                 }
                                 if (value.ToInt32() != num15)
                                 {
-                                    throw new Download_LZMA_Exception("Decompression returned different size '" + value.ToInt32() + "' than metadata '" + num15 + "'");
+                                    Exception_Router(true, new Download_LZMA_Exception("Decompression returned different size '" + value.ToInt32() + "' than metadata '" + num15 + "'"));
+                                    return;
                                 }
                                 num16 += (int)value;
                             }
@@ -681,63 +663,33 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                             }
                         }
                     }
-                    if (!Download_LZMA_Data.MStopFlag)
+
+                    if (!MStopFlag)
                     {
-                        Download_LZMA_Data_Hash.Instance.WriteHashCache(text2 + ".hsh", false);
+                        Download_LZMA_Data_Hash.Live_Instance.WriteHashCache(text2 + ".hsh", false);
                     }
-                    if (Download_LZMA_Data.MStopFlag)
+                    
+                    if (this.Complete != null && !MStopFlag)
                     {
-                        if (this.MDownloadFailed != null)
-                        {
-                            ISynchronizeInvoke arg_D16_0 = this.MFE;
-                            Delegate arg_D16_1 = this.MDownloadFailed;
-                            object[] args = new object[1];
-                            arg_D16_0.BeginInvoke(arg_D16_1, args);
-                        }
-                    }
-                    else if (this.MDownloadFinished != null)
-                    {
-                        this.MFE.BeginInvoke(this.MDownloadFinished, null);
+                        this.Complete(this, new Download_Data_Complete_EventArgs(true, DateTime.Now));
                     }
                 }
             }
             catch (Download_LZMA_Exception Error)
             {
-                if (this.MDownloadFailed != null)
-                {
-                    try
-                    {
-                        this.MFE.BeginInvoke(this.MDownloadFailed, new object[]
-                        {
-                            Error
-                        });
-                    }
-                    catch
-                    {
-                    }
-                }
+                Exception_Router(true, Error);
+                return;
             }
             catch (Exception Error)
             {
-                if (this.MDownloadFailed != null)
-                {
-                    try
-                    {
-                        this.MFE.BeginInvoke(this.MDownloadFailed, new object[]
-                        {
-                            Error
-                        });
-                    }
-                    catch
-                    {
-                    }
-                }
+                Exception_Router(true, Error);
+                return;
             }
             finally
             {
                 if (flag)
                 {
-                    Download_LZMA_Data_Hash.Instance.Clear();
+                    Download_LZMA_Data_Hash.Live_Instance.Clear();
                 }
                 this.MDownloadManager.Clear();
                 GC.Collect();
@@ -764,14 +716,12 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                 XmlDocument indexFile = this.GetIndexFile(str + "/index.xml", false);
                 if (indexFile == null)
                 {
-                    ISynchronizeInvoke arg_B9_0 = this.MFE;
-                    Delegate arg_B9_1 = this.MDownloadFailed;
-                    object[] args = new object[1];
-                    arg_B9_0.BeginInvoke(arg_B9_1, args);
+                    Exception_Router(true, new ArgumentNullException("indexFile", "Index File can not be Null"));
+                    return;
                 }
                 else
                 {
-                    long num = long.Parse(indexFile.SelectSingleNode("/index/header/length").InnerText);
+                    long Total_Length = long.Parse(indexFile.SelectSingleNode("/index/header/length").InnerText);
 
                     var Client = new WebClient();
 
@@ -785,15 +735,15 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                     Client.Headers.Add("Accept-Encoding", "gzip,deflate");
                     Client.Headers.Add("Accept-Charset", "ISO-8859-1,utf-8;q=0.7,*;q=0.7");
                     XmlNodeList xmlNodeList = indexFile.SelectNodes("/index/fileinfo");
-                    Download_LZMA_Data_Hash.Instance.Clear();
-                    Download_LZMA_Data_Hash.Instance.Start(indexFile, text2, text + ".hsh", this.MHashThreads);
-                    long num2 = 0L;
-                    ulong num3 = 0uL;
-                    ulong num4 = 0uL;
+                    Download_LZMA_Data_Hash.Live_Instance.Clear();
+                    Download_LZMA_Data_Hash.Live_Instance.Start(indexFile, text2, text + ".hsh", this.MHashThreads);
+                    long Total_Current_Length = 0;
+                    ulong num3 = 0;
+                    ulong num4 = 0;
                     foreach (XmlNode xmlNode in xmlNodeList)
                     {
                         string text3 = xmlNode.SelectSingleNode("path").InnerText;
-                        string innerText = xmlNode.SelectSingleNode("file").InnerText;
+                        string File_Name_On_Record = xmlNode.SelectSingleNode("file").InnerText;
                         if (!string.IsNullOrWhiteSpace(text2))
                         {
                             int num5 = text3.IndexOf("/");
@@ -806,11 +756,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                 text3 = text2;
                             }
                         }
-                        string text4 = text3 + "/" + innerText;
-                        int num6 = int.Parse(xmlNode.SelectSingleNode("length").InnerText);
+                        string text4 = text3 + "/" + File_Name_On_Record;
+                        long Add_Length = long.Parse(xmlNode.SelectSingleNode("length").InnerText);
                         if (xmlNode.SelectSingleNode("hash") != null)
                         {
-                            if (!Download_LZMA_Data_Hash.Instance.HashesMatch(text4))
+                            if (!Download_LZMA_Data_Hash.Live_Instance.HashesMatch(text4))
                             {
                                 num3 += ulong.Parse(xmlNode.SelectSingleNode("length").InnerText);
                                 ulong num7;
@@ -825,10 +775,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                                 num4 += num7;
                                 if (flag)
                                 {
-                                    this.MFE.BeginInvoke(this.MDownloadFailed, new object[]
-                                    {
-
-                                    });
+                                    Exception_Router(true, new ArithmeticException("Hashes do Not Match"));
                                     return;
                                 }
                                 flag4 = true;
@@ -838,66 +785,51 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
                         {
                             if (flag)
                             {
-                                throw new Download_LZMA_Exception("Without hash in the metadata I cannot verify the download");
+                                Exception_Router(true, new Download_LZMA_Exception("Without hash in the metadata I cannot verify the download"));
+                                return;
                             }
                             flag4 = true;
                         }
-                        if (Download_LZMA_Data.MStopFlag)
+                        if (MStopFlag)
                         {
-                            ISynchronizeInvoke arg_367_0 = this.MFE;
-                            Delegate arg_367_1 = this.MDownloadFailed;
-                            object[] args2 = new object[1];
-                            arg_367_0.BeginInvoke(arg_367_1, args2);
                             return;
                         }
-                        num2 += (long)num6;
-                        object[] args3 = new object[]
-                        {
-                            num,
-                            num2,
-                            0,
-                            innerText,
-                            0
-                        };
 
-                        this.MFE.BeginInvoke(this.MProgressUpdated, args3);
+                        Total_Current_Length += Add_Length;
+
+                        Updated_Progress(Total_Current_Length, Total_Length, File_Name_On_Record);
                     }
                     if (flag3)
                     {
-                        Download_LZMA_Data_Hash.Instance.WriteHashCache(text + ".hsh", true);
+                        Download_LZMA_Data_Hash.Live_Instance.WriteHashCache(text + ".hsh", true);
                     }
                     if (flag4)
                     {
-                        this.MFE.BeginInvoke(this.MDownloadFailed, new object[]
-                        {
-
-                        });
+                        Exception_Router(true, new ArithmeticException("Hashes do Not Match (Late Catch)"));
+                        return;
                     }
                     else
                     {
-                        this.MFE.BeginInvoke(this.MDownloadFinished, null);
+                        Exception_Router(true, new Exception("Unknown Exception was Caught"));
+                        return;
                     }
                 }
             }
             catch (Download_LZMA_Exception Error)
             {
-                this.MFE.BeginInvoke(this.MDownloadFailed, new object[]
-                {
-                    Error
-                });
+                Exception_Router(true, Error);
+                return;
             }
             catch (Exception Error)
             {
-                this.MFE.BeginInvoke(this.MDownloadFailed, new object[]
-                {
-                    Error
-                });
+                Exception_Router(true, Error);
+                return;
             }
             finally
             {
                 if (flag2)
                 {
-                    Download_LZMA_Data_Hash.Instance.Clear();
+                    Download_LZMA_Data_Hash.Live_Instance.Clear();
                 }
                 GC.Collect();
             }
@@ -909,10 +841,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA
         /// <returns></returns>
         public static string GetXml(string url)
         {
-            byte[] data = Download_LZMA_Data.GetData(url);
-            if (Download_LZMA_Data.IsLzma(data))
+            byte[] data = GetData(url);
+            if (IsLzma(data))
             {
-                return Download_LZMA_Data.DecompressLZMA(data);
+                return DecompressLZMA(data);
             }
             return Encoding.UTF8.GetString(data).Trim();
         }

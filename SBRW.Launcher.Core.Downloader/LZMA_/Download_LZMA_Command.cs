@@ -1,4 +1,4 @@
-﻿namespace SBRW.Launcher.Core.Downloader.LZMA
+﻿namespace SBRW.Launcher.Core.Downloader.LZMA_
 {
     /// <summary>
     /// 
@@ -8,14 +8,7 @@
         /// <summary>
         /// 
         /// </summary>
-        protected Download_LZMA_Data Cached_Data { get; set; }
-        /// <summary>
-        /// 
-        /// </summary>
-        public Download_LZMA_Data Downloader
-        {
-            get { return this.Cached_Data; }
-        }
+        public Download_LZMA_Data Cached_Data { get; internal set; }
         /// <summary>
         /// 
         /// </summary>

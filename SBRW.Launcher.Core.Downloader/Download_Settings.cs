@@ -5,7 +5,7 @@
     /// </summary>
     public class Download_Settings
     {
-        private static string Version { get { return "0.0.0.12"; } }
+        private const string Version = "0.0.0.12";
         /// <summary>
         /// 
         /// </summary>
@@ -17,10 +17,10 @@
         /// <summary>
         /// 
         /// </summary>
-        internal static string Header { get { return "SBRW.Launcher.Core.Downloader.LZMA Version " + Version + " (+https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader)"; } }
+        internal const string Header = "SBRW.Launcher.Core.Downloader.LZMA Version " + Version + " (+https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader)";
         /// <summary>
         /// 
         /// </summary>
-        internal static string Header_LZMA { get { return "SBRW.Launcher.Core.Downloader Version " + Version + " (+https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader)"; } }
+        internal const string Header_LZMA = "SBRW.Launcher.Core.Downloader Version " + Version + " (+https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader)";
     }
 }

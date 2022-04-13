@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Cache;
 
 namespace SBRW.Launcher.Core.Downloader
 {
@@ -23,11 +24,11 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public string? Download_Location { get; internal set; }
+        public string Download_Location { get; internal set; } = string.Empty;
         /// <summary>
         /// 
         /// </summary>
-        public IWebProxy? Web_Proxy { get; set; }
+        public RequestCachePolicy? Cache_Policy { get; set; }
         /// <summary>
         /// 
         /// </summary>
@@ -71,11 +72,18 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         /// <param name="Event_Hook"></param>
         /// <param name="Exception_Caught"></param>
-        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught)
+        /// <param name="Related_To_WebClient"></param>
+        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught, bool Related_To_WebClient = false)
         {
+            if (Related_To_WebClient)
+            {
+                /* Lets stop the download to pervert any memory leaks */
+                this.Cancel = true;
+            }
+
             if (this.Internal_Error != null && Event_Hook)
             {
-                this.Internal_Error(this, new Download_Exception_EventArgs(Exception_Caught, DateTime.Now));
+                this.Internal_Error(this, new Download_Exception_EventArgs(Exception_Caught, DateTime.Now, Related_To_WebClient));
             }
             else
             {
@@ -87,15 +95,17 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         /// <param name="Web_Address"></param>
         /// <param name="Location_Folder"></param>
-        /// <param name="File_Name"></param>
         /// <param name="Provied_File_Size"></param>
-        public void Download(string Web_Address, string Location_Folder, long Provied_File_Size = -1, string? File_Name = null)
+        /// <param name="Local_Cache_Policy"></param>
+        /// <param name="Provided_Proxy_Url"></param>
+        /// <param name="Local_Web_Proxy"></param>
+        public void Download(string Web_Address, string Location_Folder, long Provied_File_Size = -1, RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "", IWebProxy? Local_Web_Proxy = null)
         {
             try
             {
                 Start_Time = DateTime.Now;
 
-                Download_System = Download_Client.Create(Provied_File_Size, Web_Address, Location_Folder, this.Web_Proxy);
+                Download_System = Download_Client.Create(Provied_File_Size, Web_Address, Location_Folder, Local_Cache_Policy, Provided_Proxy_Url, Local_Web_Proxy);
 
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
 
@@ -116,7 +126,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                 long totalDownloaded = Download_System.StartPoint;
 
-                while ((readCount = Download_System.DownloadStream.Read(buffer, 0, Download_Block_Size)) > 0)
+                while (((readCount = Download_System.DownloadStream.Read(buffer, 0, Download_Block_Size)) > 0) && !Cancel)
                 {
                     if (Cancel)
                     {
@@ -148,10 +158,14 @@ namespace SBRW.Launcher.Core.Downloader
                     }
                 }
 
-                if (this.Complete != null)
+                if (this.Complete != null && !Cancel)
                 {
-                    this.Complete(this, new Download_Data_Complete_EventArgs(!Cancel, Download_System.Full_Path, DateTime.Now));
+                    this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.Full_Path, DateTime.Now));
                 }
+            }
+            catch(WebException Error_Caught)
+            {
+                Exception_Router(true, Error_Caught, true);
             }
             catch (UriFormatException Error)
             {
