@@ -24,11 +24,13 @@ namespace SBRW.Launcher.Core.Downloader.Web_
                 }.Uri;
             }
 
-            ServicePointManager.FindServicePoint(Web_Address).ConnectionLeaseTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
+            ServicePointManager.FindServicePoint(Web_Address).ConnectionLeaseTimeout = (int)(Download_Settings.Launcher_WebCall_Timeout_Enable ?
+                TimeSpan.FromSeconds(Download_Settings.Launcher_WebCall_Timeout_Cache + 1).TotalMilliseconds : TimeSpan.FromMinutes(1).TotalMilliseconds);
             HttpWebRequest Live_Request = (HttpWebRequest)WebRequest.Create(Web_Address);
             Live_Request.Headers["X-UserAgent"] = Download_Settings.Header_LZMA;
             Live_Request.UserAgent = Download_Settings.Header_LZMA;
-            Live_Request.Timeout = (int)TimeSpan.FromSeconds(30).TotalMilliseconds;
+            Live_Request.Timeout = (int)(Download_Settings.Launcher_WebCall_Timeout_Enable ?
+                TimeSpan.FromSeconds(Download_Settings.Launcher_WebCall_Timeout_Cache).TotalMilliseconds : TimeSpan.FromSeconds(30).TotalMilliseconds);
             Live_Request.KeepAlive = false;
 
             return Live_Request;

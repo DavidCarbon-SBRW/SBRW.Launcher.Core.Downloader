@@ -251,7 +251,8 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                     Uri URLCall = new Uri(url);
 
 
-                    ServicePointManager.FindServicePoint(URLCall).ConnectionLeaseTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
+                    ServicePointManager.FindServicePoint(URLCall).ConnectionLeaseTimeout = (int)(Download_Settings.Launcher_WebCall_Timeout_Enable ?
+                    TimeSpan.FromSeconds(Download_Settings.Launcher_WebCall_Timeout_Cache + 1).TotalMilliseconds : TimeSpan.FromMinutes(1).TotalMilliseconds);
                     var Client = new WebClient();
 
                     if (!Download_Settings.Alternative_WebCalls) { Client = new WebClientWithTimeout(); }
@@ -856,7 +857,8 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         public static byte[] GetData(string url)
         {
             Uri URLCall = new Uri(url);
-            ServicePointManager.FindServicePoint(URLCall).ConnectionLeaseTimeout = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
+            ServicePointManager.FindServicePoint(URLCall).ConnectionLeaseTimeout = (int)(Download_Settings.Launcher_WebCall_Timeout_Enable ?
+                TimeSpan.FromSeconds(Download_Settings.Launcher_WebCall_Timeout_Cache + 1).TotalMilliseconds : TimeSpan.FromMinutes(1).TotalMilliseconds);
             var Client = new WebClient();
 
             if (!Download_Settings.Alternative_WebCalls) { Client = new WebClientWithTimeout(); }
