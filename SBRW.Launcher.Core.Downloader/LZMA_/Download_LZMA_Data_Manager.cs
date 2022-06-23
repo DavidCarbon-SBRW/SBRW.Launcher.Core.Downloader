@@ -554,9 +554,21 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// </summary>
         public enum DownloadStatus
         {
+            /// <summary>
+            /// 
+            /// </summary>
             Queued,
+            /// <summary>
+            /// 
+            /// </summary>
             Downloading,
+            /// <summary>
+            /// 
+            /// </summary>
             Downloaded,
+            /// <summary>
+            /// 
+            /// </summary>
             Canceled
         }
     }
