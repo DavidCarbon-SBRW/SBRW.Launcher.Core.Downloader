@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
 	<LangVersion>8.0</LangVersion>
 	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	  <Version>0.1.1</Version>
+	  <Version>0.1.2</Version>
 	  <Authors>Soapbox Race World - Launcher Division</Authors>
 	  <Company>Soapbox Race World</Company>
 	  <Copyright>© Soapbox Race World</Copyright>
@@ -32,6 +32,7 @@
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	  <!-- Required: Include symbols files if Self-Hosted Nuget Feed does not support symbol packages -->
 	  <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+	  <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
 
 	<ItemGroup>
