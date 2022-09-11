@@ -204,7 +204,10 @@ namespace SBRW.Launcher.Core.Downloader
                                     }
                                     finally
                                     {
-                                        GC.Collect();
+                                        if (!Download_Settings.System_Unix)
+                                        {
+                                            GC.Collect();
+                                        }
                                     }
                                 }
                                 else

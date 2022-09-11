@@ -135,7 +135,10 @@ namespace SBRW.Launcher.Core.Downloader
                     }
                     else
                     {
-                        GC.Collect();
+                        if (!Download_Settings.System_Unix)
+                        {
+                            GC.Collect();
+                        }
                     }
 
                     totalDownloaded += readCount;
@@ -154,7 +157,10 @@ namespace SBRW.Launcher.Core.Downloader
                     }
                     else
                     {
-                        GC.Collect();
+                        if (!Download_Settings.System_Unix)
+                        {
+                            GC.Collect();
+                        }
                     }
                 }
 
