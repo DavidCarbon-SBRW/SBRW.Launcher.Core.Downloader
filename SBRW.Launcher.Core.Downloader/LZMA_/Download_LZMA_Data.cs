@@ -142,7 +142,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             }
             finally
             {
-                GC.Collect();
+                if (!Download_Settings.System_Unix)
+                {
+                    GC.Collect();
+                }
             }
         }
         /// <summary>
@@ -235,7 +238,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 this.Internal_Web_Error(this, new Download_Exception_EventArgs(Live_Download_Data.Error, DateTime.Now));
             }
 
-            GC.Collect();
+            if (!Download_Settings.System_Unix)
+            {
+                GC.Collect();
+            }
         }
 
         private XmlDocument GetIndexFile(string url, bool useCache)
@@ -551,7 +557,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                         this.MDownloadManager.CancelDownload(string.Format("{0}/section{1}.dat", text, l));
                                     }
                                     array2 = null;
-                                    GC.Collect();
+                                    if (!Download_Settings.System_Unix)
+                                    {
+                                        GC.Collect();
+                                    }
                                     array2 = this.MDownloadManager.GetFile(text7);
                                     if (array2 == null)
                                     {
@@ -693,7 +702,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                     Download_LZMA_Data_Hash.Live_Instance.Clear();
                 }
                 this.MDownloadManager.Clear();
-                GC.Collect();
+                if (!Download_Settings.System_Unix)
+                {
+                    GC.Collect();
+                }
                 this.MDownloading = false;
             }
         }
@@ -832,7 +844,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 {
                     Download_LZMA_Data_Hash.Live_Instance.Clear();
                 }
-                GC.Collect();
+                if (!Download_Settings.System_Unix)
+                {
+                    GC.Collect();
+                }
             }
         }
         /// <summary>
