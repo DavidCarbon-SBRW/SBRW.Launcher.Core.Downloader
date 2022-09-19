@@ -99,13 +99,13 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Local_Cache_Policy"></param>
         /// <param name="Provided_Proxy_Url"></param>
         /// <param name="Local_Web_Proxy"></param>
-        public void Download(string Web_Address, string Location_Folder, long Provied_File_Size = -1, RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "", IWebProxy? Local_Web_Proxy = null)
+        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File = "", long Provied_File_Size = -1, RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "", IWebProxy? Local_Web_Proxy = null)
         {
             try
             {
                 Start_Time = DateTime.Now;
 
-                Download_System = Download_Client.Create(Provied_File_Size, Web_Address, Location_Folder, Local_Cache_Policy, Provided_Proxy_Url, Local_Web_Proxy);
+                Download_System = Download_Client.Create(Provied_File_Size, Web_Address, Location_Folder, string.Empty, Local_Web_Proxy, Local_Cache_Policy, Provided_Proxy_Url, Provided_Arhive_File);
 
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
 
@@ -202,7 +202,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// Download a file from a list or URLs. If downloading from one of the URLs fails,
         /// another URL is tried.
         /// </summary>
-        public void Download(List<string> Web_Address_List, string Location_Folder, long Provied_File_Size)
+        public void Download(List<string> Web_Address_List, string Location_Folder, long Provied_File_Size, string Provided_Archive_File = "")
         {
             // validate input
             if (Web_Address_List == null)
@@ -224,7 +224,7 @@ namespace SBRW.Launcher.Core.Downloader
                     Web_Address_Exception = null;
                     try
                     {
-                        Download(Single_Web_Address, Location_Folder, Provied_File_Size);
+                        Download(Single_Web_Address, Location_Folder, Provided_Archive_File, Provied_File_Size);
                     }
                     catch (Exception e)
                     {
@@ -288,15 +288,32 @@ namespace SBRW.Launcher.Core.Downloader
                 // or an object array containing a list<string> and a dest folder
                 if (Object_Data is string[])
                 {
-                    string[] List_Strings = Object_Data as string[];
-                    this.Download(List_Strings[0], List_Strings[1], long.TryParse(List_Strings[2], out long Provied_File_Size) ? Provied_File_Size : -1);
+                    string[]? List_Strings = Object_Data as string[];
+                    if (List_Strings != null)
+                    {
+                        if (List_Strings.Length > 0 && List_Strings.Length <= 4)
+                        {
+                            this.Download(List_Strings[0], List_Strings[1], List_Strings[2], long.TryParse(List_Strings[3], out long Provied_File_Size) ? Provied_File_Size : -1);
+                        }
+                    }
                 }
                 else
                 {
-                    object[] List_Objects = Object_Data as object[];
-                    List<string> Web_Address_List = (List_Objects[0] as List<string>) ?? new List<string>();
-                    string Location_Folder = List_Objects[1] as string;
-                    this.Download(Web_Address_List, Location_Folder, long.TryParse(List_Objects[2] as string, out long Provied_File_Size) ? Provied_File_Size : -1);
+                    object[]? List_Objects = Object_Data as object[];
+                    if (List_Objects != null)
+                    {
+                        if (List_Objects.Length > 0 && List_Objects.Length <= 3)
+                        {
+                            List<string> Web_Address_List = (List_Objects[0] as List<string>) ?? new List<string>();
+                            string? Location_Folder = List_Objects[1] as string;
+                            if (!string.IsNullOrWhiteSpace(Location_Folder))
+                            {
+#pragma warning disable CS8604 // Possible null reference argument.
+                                this.Download(Web_Address_List, Location_Folder, long.TryParse(List_Objects[2] as string, out long Provied_File_Size) ? Provied_File_Size : -1);
+#pragma warning restore CS8604 // Possible null reference argument.
+                            }
+                        }
+                    }
                 }
             }
         }

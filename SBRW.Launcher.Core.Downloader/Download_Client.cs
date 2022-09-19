@@ -63,10 +63,6 @@ namespace SBRW.Launcher.Core.Downloader
         {
             return Create(Provided_File_Size, Web_Address, Location_Folder, string.Empty, Local_Web_Proxy, Local_Cache_Policy);
         }
-        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "", IWebProxy? Local_Web_Proxy = null)
-        {
-            return Create(Provided_File_Size, Web_Address, Location_Folder, string.Empty, Local_Web_Proxy, Local_Cache_Policy, Provided_Proxy_Url);
-        }
         /// <summary>
         /// 
         /// </summary>
@@ -75,10 +71,11 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Location_Folder"></param>
         /// <param name="Local_Cache_Policy"></param>
         /// <param name="Provided_Proxy_Url"></param>
+        /// <param name="Local_Web_Proxy"></param>
         /// <returns></returns>
-        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "")
+        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "", IWebProxy? Local_Web_Proxy = null)
         {
-            return Create(Provided_File_Size, Web_Address, Location_Folder, string.Empty, null, Local_Cache_Policy, Provided_Proxy_Url);
+            return Create(Provided_File_Size, Web_Address, Location_Folder, string.Empty, Local_Web_Proxy, Local_Cache_Policy, Provided_Proxy_Url, string.Empty);
         }
         /// <summary>
         /// 
@@ -90,10 +87,11 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Local_Web_Proxy"></param>
         /// <param name="Local_Cache_Policy"></param>
         /// <param name="Provided_Proxy_Url"></param>
+        /// <param name="Provided_Arhive_File"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
         public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, string Provided_File_Name = "", IWebProxy? Local_Web_Proxy = null, 
-            RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "")
+            RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "", string Provided_Arhive_File = "")
         {
             // This is what we will return
             Download_Client Data_Recevied = new Download_Client();
@@ -165,7 +163,7 @@ namespace SBRW.Launcher.Core.Downloader
 
             // Take the name of the file given to use from the web server.
             Set_File_Name = Path.GetFileName(!string.IsNullOrWhiteSpace(Provided_File_Name) ? Provided_File_Name : Data_Recevied.Web_Response.ResponseUri.ToString());
-            Set_Full_Path = Path.Combine(Location_Folder, ".Launcher", "Downloads", Set_File_Name);
+            Set_Full_Path = File.Exists(Provided_Arhive_File) ? Provided_Arhive_File : Path.Combine(Location_Folder, ".Launcher", "Downloads", Set_File_Name);
 
             // If we don't know how big the file is supposed to be,
             // we can't resume, so delete what we already have if something is on disk already.

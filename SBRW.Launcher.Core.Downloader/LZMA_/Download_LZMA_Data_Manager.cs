@@ -325,12 +325,12 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                         {
                             if (this.Download_List[str].Status == DownloadStatus.Canceled || this.Workers_Max <= 1)
                             {
-                                this.Download_List[str].Data = null;
+                                this.Download_List[str].Data = default;
                                 this.Download_List[str].Status = DownloadStatus.Canceled;
                             }
                             else
                             {
-                                this.Download_List[str].Data = null;
+                                this.Download_List[str].Data = default;
                                 this.Download_List[str].Status = DownloadStatus.Queued;
                                 lock (this.Download_Queue)
                                 {
