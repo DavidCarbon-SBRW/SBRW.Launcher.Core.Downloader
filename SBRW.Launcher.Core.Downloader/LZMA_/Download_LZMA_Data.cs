@@ -163,7 +163,9 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// <param name="downloadThreads"></param>
         /// <param name="downloadChunks"></param>
         /// <param name="Start_Time"></param>
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public Download_LZMA_Data(ISynchronizeInvoke fe, int hashThreads, int downloadThreads, int downloadChunks, DateTime Start_Time)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             this.MHashThreads = hashThreads;
             this.Progress_Start_Time = Start_Time;
