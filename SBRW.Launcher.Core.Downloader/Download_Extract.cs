@@ -106,6 +106,7 @@ namespace SBRW.Launcher.Core.Downloader
             {
                 Start_Time = DateTime.Now;
 
+#pragma warning disable IDE0063 // Use simple 'using' statement
                 using (ZipArchive Package_Archive = ZipFile.OpenRead(File_Custom_Pack_Path))
                 {
                     Total_File = Package_Archive.Entries.Count;
@@ -237,6 +238,7 @@ namespace SBRW.Launcher.Core.Downloader
                         }
                     }
                 }
+#pragma warning restore IDE0063 // Use simple 'using' statement
             }
         }
     }

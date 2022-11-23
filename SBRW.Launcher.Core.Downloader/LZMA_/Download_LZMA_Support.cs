@@ -3,7 +3,7 @@
     /// <summary>
     /// 
     /// </summary>
-    public class Download_LZMA_Support
+    public static class Download_LZMA_Support
     {
         /// <summary>
         /// 
