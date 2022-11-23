@@ -6,7 +6,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
     /// <summary>
     /// 
     /// </summary>
-    public class Download_LZMA
+    public static class Download_LZMA
     {
         /// <summary>
         /// 

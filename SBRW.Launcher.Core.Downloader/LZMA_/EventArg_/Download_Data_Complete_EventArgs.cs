@@ -23,6 +23,17 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_.EventArg_
         /// 
         /// </summary>
         /// <param name="Completion_State"></param>
+        /// <param name="Completion_Time"></param>
+        public Download_Data_Complete_EventArgs(bool Completion_State, DateTime Completion_Time)
+        {
+            this.Complete = Completion_State;
+            this.Download_Location = string.Empty;
+            this.Stop_Time = Completion_Time;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Completion_State"></param>
         /// <param name="Saved_Location"></param>
         /// <param name="Completion_Time"></param>
         public Download_Data_Complete_EventArgs(bool Completion_State, DateTime Completion_Time, string Saved_Location = "")

@@ -72,8 +72,17 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         /// <param name="Event_Hook"></param>
         /// <param name="Exception_Caught"></param>
+        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught)
+        {
+            Exception_Router(Event_Hook, Exception_Caught, false);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Event_Hook"></param>
+        /// <param name="Exception_Caught"></param>
         /// <param name="Related_To_WebClient"></param>
-        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught, bool Related_To_WebClient = false)
+        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught, bool Related_To_WebClient)
         {
             if (Related_To_WebClient)
             {
@@ -94,18 +103,81 @@ namespace SBRW.Launcher.Core.Downloader
         /// 
         /// </summary>
         /// <param name="Web_Address"></param>
+        /// <param name="Location_File_Path"></param>
+        /// <returns></returns>
+        public void Download(string Web_Address, string Location_File_Path)
+        {
+            Download(Web_Address, Location_File_Path, string.Empty);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_File_Path"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        /// <returns></returns>
+        public void Download(string Web_Address, string Location_File_Path, string Provided_Arhive_File)
+        {
+            Download(Web_Address, Location_File_Path, Provided_Arhive_File, -1);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
         /// <param name="Location_Folder"></param>
-        /// <param name="Provied_File_Size"></param>
-        /// <param name="Local_Cache_Policy"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        /// <param name="Provided_File_Size"></param>
+        /// <returns></returns>
+        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size)
+        {
+            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, string.Empty);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        /// <param name="Provided_File_Size"></param>
         /// <param name="Provided_Proxy_Url"></param>
+        /// <returns></returns>
+        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url)
+        {
+            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, string.Empty, null);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        /// <param name="Provided_File_Size"></param>
+        /// <param name="Provided_Proxy_Url"></param>
+        /// <param name="Provided_File_Name"></param>
+        /// <param name="Local_Cache_Policy"></param>
+        /// <returns></returns>
+        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url, string Provided_File_Name, RequestCachePolicy? Local_Cache_Policy)
+        {
+            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, string.Empty, Local_Cache_Policy, null);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        /// <param name="Provided_File_Size"></param>
+        /// <param name="Provided_Proxy_Url"></param>
+        /// <param name="Provided_File_Name"></param>
+        /// <param name="Local_Cache_Policy"></param>
         /// <param name="Local_Web_Proxy"></param>
-        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File = "", long Provied_File_Size = -1, RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "", IWebProxy? Local_Web_Proxy = null)
+        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url, string Provided_File_Name, RequestCachePolicy? Local_Cache_Policy, IWebProxy? Local_Web_Proxy)
         {
             try
             {
                 Start_Time = DateTime.Now;
 
-                Download_System = Download_Client.Create(Provied_File_Size, Web_Address, Location_Folder, string.Empty, Local_Web_Proxy, Local_Cache_Policy, Provided_Proxy_Url, Provided_Arhive_File);
+                Download_System = Download_Client.Create(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, Local_Web_Proxy);
 
                 Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
 

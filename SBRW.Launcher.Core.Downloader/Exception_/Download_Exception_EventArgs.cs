@@ -40,8 +40,19 @@ namespace SBRW.Launcher.Core.Downloader.Exception_
         /// </summary>
         /// <param name="Exception_Caught"></param>
         /// <param name="Time_Caught"></param>
+        public Download_Exception_EventArgs(Exception Exception_Caught, DateTime Time_Caught)
+        {
+            this.Recorded_Exception = Exception_Caught;
+            this.Recorded_Time = Time_Caught;
+            this.Related_To_WebClient = false;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Exception_Caught"></param>
+        /// <param name="Time_Caught"></param>
         /// <param name="Exception_Web_Related"></param>
-        public Download_Exception_EventArgs(Exception Exception_Caught, DateTime Time_Caught, bool Exception_Web_Related = false)
+        public Download_Exception_EventArgs(Exception Exception_Caught, DateTime Time_Caught, bool Exception_Web_Related)
         {
             this.Recorded_Exception = Exception_Caught;
             this.Recorded_Time = Time_Caught;

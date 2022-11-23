@@ -85,7 +85,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                 }
                             }
                         }
-                        catch (Exception) { }
+                        catch (Exception) 
+                        { 
+
+                        }
                     }
                     else
                     {
@@ -165,11 +168,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                     Thread.Sleep(100);
                 }
             }
-            catch (Exception Error)
+            catch (Exception)
             {
-                Exception exception = Error;
                 return false;
             }
+
             return @new;
         }
         /// <summary>
@@ -230,7 +233,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                             }
                             else
                             {
-                                string[] strArrays = str2.Split(new char[] { '\t' });
+                                string[] strArrays = str2.Split('\t');
                                 string str4 = strArrays[0];
                                 if (this.File_List.ContainsKey(str4) && File.Exists(str4) && long.Parse(strArrays[2]) == (new FileInfo(str4)).LastWriteTime.Ticks)
                                 {
@@ -318,7 +321,10 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                             streamWriter.WriteLine(string.Format("{0}\t{1}\t{2}", key, empty, lastWriteTime.Ticks));
                         }
                     }
-                    catch (Exception) { }
+                    catch (Exception) 
+                    { 
+
+                    }
                 }
                 finally
                 {

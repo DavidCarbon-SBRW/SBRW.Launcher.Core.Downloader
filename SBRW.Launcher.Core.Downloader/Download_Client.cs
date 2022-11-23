@@ -32,66 +32,86 @@ namespace SBRW.Launcher.Core.Downloader
         /// 
         /// </summary>
         /// <param name="Web_Address"></param>
+        /// <returns></returns>
+        public static Download_Client Create(string Web_Address)
+        {
+            return Create(Web_Address, "/");
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
         /// <param name="Location_File_Path"></param>
         /// <returns></returns>
         public static Download_Client Create(string Web_Address, string Location_File_Path)
         {
-            return Create(-1, Web_Address, Location_File_Path, null);
+            return Create(Web_Address, Location_File_Path, string.Empty);
         }
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="Provided_File_Size"></param>
         /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        /// <param name="Local_Web_Proxy"></param>
-        /// <returns></returns>
-        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, IWebProxy? Local_Web_Proxy = null)
-        {
-            return Create(Provided_File_Size, Web_Address, Location_Folder, null, Local_Web_Proxy);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Provided_File_Size"></param>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        /// <param name="Local_Cache_Policy"></param>
-        /// <param name="Local_Web_Proxy"></param>
-        /// <returns></returns>
-        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, RequestCachePolicy? Local_Cache_Policy = null, IWebProxy? Local_Web_Proxy = null)
-        {
-            return Create(Provided_File_Size, Web_Address, Location_Folder, string.Empty, Local_Web_Proxy, Local_Cache_Policy);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Provided_File_Size"></param>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        /// <param name="Local_Cache_Policy"></param>
-        /// <param name="Provided_Proxy_Url"></param>
-        /// <param name="Local_Web_Proxy"></param>
-        /// <returns></returns>
-        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "", IWebProxy? Local_Web_Proxy = null)
-        {
-            return Create(Provided_File_Size, Web_Address, Location_Folder, string.Empty, Local_Web_Proxy, Local_Cache_Policy, Provided_Proxy_Url, string.Empty);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Provided_File_Size"></param>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        /// <param name="Provided_File_Name"></param>
-        /// <param name="Local_Web_Proxy"></param>
-        /// <param name="Local_Cache_Policy"></param>
-        /// <param name="Provided_Proxy_Url"></param>
+        /// <param name="Location_File_Path"></param>
         /// <param name="Provided_Arhive_File"></param>
         /// <returns></returns>
+        public static Download_Client Create(string Web_Address, string Location_File_Path, string Provided_Arhive_File)
+        {
+            return Create( Web_Address, Location_File_Path, Provided_Arhive_File, - 1);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        /// <param name="Provided_File_Size"></param>
+        /// <returns></returns>
+        public static Download_Client Create(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size)
+        {
+            return Create(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, string.Empty);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        /// <param name="Provided_File_Size"></param>
+        /// <param name="Provided_Proxy_Url"></param>
+        /// <returns></returns>
+        public static Download_Client Create(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url)
+        {
+            return Create(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, string.Empty, null);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        /// <param name="Provided_File_Size"></param>
+        /// <param name="Provided_Proxy_Url"></param>
+        /// <param name="Provided_File_Name"></param>
+        /// <param name="Local_Cache_Policy"></param>
+        /// <returns></returns>
+        public static Download_Client Create(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url, string Provided_File_Name, RequestCachePolicy? Local_Cache_Policy)
+        {
+            return Create(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, string.Empty, Local_Cache_Policy, null);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        /// <param name="Provided_File_Size"></param>
+        /// <param name="Provided_Proxy_Url"></param>
+        /// <param name="Provided_File_Name"></param>
+        /// <param name="Local_Cache_Policy"></param>
+        /// <param name="Local_Web_Proxy"></param>
+        /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        public static Download_Client Create(long Provided_File_Size, string Web_Address, string Location_Folder, string Provided_File_Name = "", IWebProxy? Local_Web_Proxy = null, 
-            RequestCachePolicy? Local_Cache_Policy = null, string Provided_Proxy_Url = "", string Provided_Arhive_File = "")
+        public static Download_Client Create(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url, string Provided_File_Name, RequestCachePolicy? Local_Cache_Policy, IWebProxy? Local_Web_Proxy)
         {
             // This is what we will return
             Download_Client Data_Recevied = new Download_Client();
@@ -224,10 +244,6 @@ namespace SBRW.Launcher.Core.Downloader
 
             return Data_Recevied;
         }
-        /// <summary>
-        /// Used by the factory method
-        /// </summary>
-        public Download_Client() { }
         /// <summary>
         /// 
         /// </summary>
