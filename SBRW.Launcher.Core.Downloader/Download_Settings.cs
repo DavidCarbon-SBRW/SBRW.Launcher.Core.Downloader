@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 
 namespace SBRW.Launcher.Core.Downloader
 {
@@ -7,7 +9,37 @@ namespace SBRW.Launcher.Core.Downloader
     /// </summary>
     public static class Download_Settings
     {
-        private const string Version = "0.0.0.12";
+        private static string Version_Cache { get; set; } = "0.0.2.0";
+        private static bool Version_Check { get; set; }
+        private static string Version 
+        {
+            get
+            {
+                if(!Version_Check)
+                {
+                    try
+                    {
+                        if (File.Exists("SBRW.Launcher.Core.Downloader.dll"))
+                        {
+                            Version_Cache = FileVersionInfo.GetVersionInfo("SBRW.Launcher.Core.Downloader.dll").FileVersion;
+                        }
+                    }
+                    catch
+                    {
+                        /* Ignore Issue */
+                    }
+
+                    Version_Check = true;
+                }
+                
+                if(string.IsNullOrWhiteSpace(Version_Cache))
+                {
+                    Version_Cache = "0.0.2.0";
+                }
+
+                return Version_Cache; 
+            } 
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -19,11 +51,11 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        internal const string Header = "SBRW.Launcher.Core.Downloader.LZMA Version " + Version + " (+https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader)";
+        internal static string Header = "SBRW.Launcher.Core.Downloader.LZMA Version " + Version + " (+https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader)";
         /// <summary>
         /// 
         /// </summary>
-        internal const string Header_LZMA = "SBRW.Launcher.Core.Downloader Version " + Version + " (+https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader)";
+        internal static string Header_LZMA = "SBRW.Launcher.Core.Downloader Version " + Version + " (+https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader)";
         /// <summary>
         /// Global Boolen for Web Call Timeout before termining the connection
         /// </summary>
