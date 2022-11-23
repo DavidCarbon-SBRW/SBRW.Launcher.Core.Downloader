@@ -5,7 +5,7 @@ namespace SBRW.Launcher.Core.Downloader
     /// <summary>
     /// 
     /// </summary>
-    public class Download_Settings
+    public static class Download_Settings
     {
         private const string Version = "0.0.0.12";
         /// <summary>

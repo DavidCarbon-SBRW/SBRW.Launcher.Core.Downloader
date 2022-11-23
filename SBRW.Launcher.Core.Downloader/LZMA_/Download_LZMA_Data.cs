@@ -11,6 +11,7 @@ using System.Net.Cache;
 using System.Text;
 using System.Threading;
 using System.Xml;
+using static SBRW.Launcher.Core.Downloader.LZMA_.Download_LZMA_Data_Manager;
 
 namespace SBRW.Launcher.Core.Downloader.LZMA_
 {
@@ -572,7 +573,8 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                     num13 = num6;
                                     num5 += (long)array2.Length;
                                     num6++;
-                                    if (!this.MDownloadManager.GetStatus(string.Format("{0}/section{1}.dat", text, num6)).HasValue && num5 < Header_Length_Compressed)
+                                    if ((this.MDownloadManager.GetStatus(string.Format("{0}/section{1}.dat", text, num6)) != DownloadStatus.Unknown) && 
+                                        (num5 < Header_Length_Compressed))
                                     {
                                         this.MDownloadManager.ScheduleFile(string.Format("{0}/section{1}.dat", text, num6));
                                     }

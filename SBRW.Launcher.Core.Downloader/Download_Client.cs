@@ -225,10 +225,6 @@ namespace SBRW.Launcher.Core.Downloader
             return Data_Recevied;
         }
         /// <summary>
-        /// Used by the factory method
-        /// </summary>
-        public Download_Client() { }
-        /// <summary>
         /// 
         /// </summary>
         /// <param name="Web_Address"></param>

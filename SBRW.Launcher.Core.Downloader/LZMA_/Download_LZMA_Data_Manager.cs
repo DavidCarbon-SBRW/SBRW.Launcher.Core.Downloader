@@ -229,17 +229,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BackgroundWorker_RunWorkerComplete(object sender, RunWorkerCompletedEventArgs e)
-        {
-            if (e.Error != null)
-            {
-            }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
         public void CancelAllDownloads()
         {
             this.Stop();
@@ -396,6 +385,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                     }
                 }
             }
+
             return data;
         }
         /// <summary>
@@ -403,13 +393,16 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public DownloadStatus? GetStatus(string fileName)
+        public DownloadStatus GetStatus(string fileName)
         {
             if (!this.Download_List.ContainsKey(fileName))
             {
-                return null;
+                return DownloadStatus.Unknown;
             }
-            return new Download_LZMA_Data_Manager.DownloadStatus?(this.Download_List[fileName].Status);
+            else
+            {
+                return this.Download_List[fileName].Status;
+            }
         }
         /// <summary>
         /// 
@@ -422,8 +415,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             int num = 0;
             foreach (XmlNode xmlNodes in doc.SelectNodes("/index/fileinfo"))
             {
-                string innerText = xmlNodes.SelectSingleNode("path").InnerText;
-                string str = xmlNodes.SelectSingleNode("file").InnerText;
                 if (xmlNodes.SelectSingleNode("section") == null)
                 {
                     continue;
@@ -447,12 +438,8 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         {
             if (this.Download_List.ContainsKey(fileName))
             {
-                DownloadStatus status = DownloadStatus.Queued;
-                lock (this.Download_List[fileName])
-                {
-                    status = this.Download_List[fileName].Status;
-                }
-                if (status != DownloadStatus.Queued && status != DownloadStatus.Canceled)
+                if (this.Download_List[fileName].Status != DownloadStatus.Queued && 
+                    this.Download_List[fileName].Status != DownloadStatus.Canceled)
                 {
                     return;
                 }
@@ -487,7 +474,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 {
                     BackgroundWorker backgroundWorker = new BackgroundWorker();
                     backgroundWorker.DoWork += new DoWorkEventHandler(this.BackgroundWorker_DoWork);
-                    backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(this.BackgroundWorker_RunWorkerComplete);
                     backgroundWorker.RunWorkerAsync();
                     this.Workers_Live.Add(backgroundWorker);
                     Worker_Count++;
@@ -506,7 +492,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 {
                     BackgroundWorker backgroundWorker = new BackgroundWorker();
                     backgroundWorker.DoWork += new DoWorkEventHandler(this.BackgroundWorker_DoWork);
-                    backgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(this.BackgroundWorker_RunWorkerComplete);
                     backgroundWorker.RunWorkerAsync();
                     this.Workers_Live.Add(backgroundWorker);
                     Worker_Count++;
@@ -569,7 +554,11 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             /// <summary>
             /// 
             /// </summary>
-            Canceled
+            Canceled,
+            /// <summary>
+            /// 
+            /// </summary>
+            Unknown
         }
     }
 }
