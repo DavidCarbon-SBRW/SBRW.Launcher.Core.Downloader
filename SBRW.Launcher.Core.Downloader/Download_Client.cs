@@ -128,115 +128,122 @@ namespace SBRW.Launcher.Core.Downloader
             Data_Recevied.Data_Size = Size_Recevied;
 
             WebRequest Data_Request = Data_Recevied.GetRequest(Web_Address, Provided_Proxy_Url);
+            bool Web_Response_Error = false;
             try
             {
                 Data_Recevied.Web_Response = Data_Request.GetResponse();
             }
             catch (WebException)
             {
+                Web_Response_Error = true;
                 throw;
             }
-            catch (Exception Error_Caught)
+            catch (Exception)
             {
-                throw new ArgumentException(string.Format(
-                    "Error downloading \"{0}\": {1}", Web_Address, Error_Caught.Message), Error_Caught);
+                Web_Response_Error = true;
+                throw;
             }
 
-            if (Data_Recevied.Web_Response is HttpWebResponse)
+            if(!Web_Response_Error)
             {
-                HttpWebResponse? httpResponse = Data_Recevied.Web_Response as HttpWebResponse;
-
-                // If Received Response Is Null, throw an Error
-                if (httpResponse == null)
+                if (Data_Recevied.Web_Response is HttpWebResponse)
                 {
-                    throw new ArgumentException(
-                        string.Format("Could not download \"{0}\" - Received Response is Null",
-                        Web_Address));
+                    HttpWebResponse? httpResponse = Data_Recevied.Web_Response as HttpWebResponse;
+
+                    // If Received Response Is Null, throw an Error
+                    if (httpResponse == null)
+                    {
+                        throw new Exception(
+                            string.Format("Could not download \"{0}\" - Received Response is Null",
+                            Web_Address));
+                    }
+
+                    // If it's an HTML page, it's probably an error page. Comment this
+                    // out to enable downloading of HTML pages.
+                    if (httpResponse.ContentType.Contains("text/html") || httpResponse.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        throw new Exception(
+                            string.Format("Could not download \"{0}\" - a web page was returned from the web server.",
+                            Web_Address));
+                    }
                 }
-
-                // If it's an HTML page, it's probably an error page. Comment this
-                // out to enable downloading of HTML pages.
-                if (httpResponse.ContentType.Contains("text/html") || httpResponse.StatusCode == HttpStatusCode.NotFound)
+                else if (Data_Recevied.Web_Response is FtpWebResponse)
                 {
-                    throw new ArgumentException(
-                        string.Format("Could not download \"{0}\" - a web page was returned from the web server.",
-                        Web_Address));
-                }
-            }
-            else if (Data_Recevied.Web_Response is FtpWebResponse)
-            {
-                FtpWebResponse? ftpResponse = Data_Recevied.Web_Response as FtpWebResponse;
+                    FtpWebResponse? ftpResponse = Data_Recevied.Web_Response as FtpWebResponse;
 
-                if (ftpResponse == null)
-                {
-                    throw new ArgumentException(
-                        string.Format("Could not download \"{0}\" - FTP server Responsed with Null",
-                        Web_Address));
-                }
+                    if (ftpResponse == null)
+                    {
+                        throw new Exception(
+                            string.Format("Could not download \"{0}\" - FTP server Responsed with Null",
+                            Web_Address));
+                    }
 
-                if (ftpResponse.StatusCode == FtpStatusCode.ConnectionClosed)
-                {
-                    throw new ArgumentException(
-                        string.Format("Could not download \"{0}\" - FTP server closed the connection.", Web_Address));
-                }
-            }
-
-            // Take the name of the file given to use from the web server.
-            Set_File_Name = Path.GetFileName(!string.IsNullOrWhiteSpace(Provided_File_Name) ? Provided_File_Name : Data_Recevied.Web_Response.ResponseUri.ToString());
-            Set_Full_Path = File.Exists(Provided_Arhive_File) ? Provided_Arhive_File : Path.Combine(Location_Folder, ".Launcher", "Downloads", Set_File_Name);
-
-            // If we don't know how big the file is supposed to be,
-            // we can't resume, so delete what we already have if something is on disk already.
-            if (!Data_Recevied.IsProgressKnown && File.Exists(Set_Full_Path))
-            {
-                File.Delete(Set_Full_Path);
-            }
-
-            if (Data_Recevied.IsProgressKnown && File.Exists(Set_Full_Path))
-            {
-                // We only support resuming on http Data_Requestuests
-                if (!(Data_Recevied.Web_Response is HttpWebResponse))
-                {
-                    File.Delete(Set_Full_Path);
-                    Data_Recevied.Data_Start = 0;
+                    if (ftpResponse.StatusCode == FtpStatusCode.ConnectionClosed)
+                    {
+                        throw new Exception(
+                            string.Format("Could not download \"{0}\" - FTP server closed the connection.", Web_Address));
+                    }
                 }
                 else
                 {
-                    // Try and start where the file on disk left off
-                    Data_Recevied.Data_Start = new FileInfo(Set_Full_Path).Length;
+                    // Take the name of the file given to use from the web server.
+                    Set_File_Name = Path.GetFileName(!string.IsNullOrWhiteSpace(Provided_File_Name) ? Provided_File_Name : Data_Recevied.Web_Response.ResponseUri.ToString());
+                    Set_Full_Path = File.Exists(Provided_Arhive_File) ? Provided_Arhive_File : Path.Combine(Location_Folder, ".Launcher", "Downloads", Set_File_Name);
 
-                    // If we have a file that's bigger than what is online, then something 
-                    // strange happened. Delete it and start again.
-                    if (Data_Recevied.Data_Start > Size_Recevied)
+                    // If we don't know how big the file is supposed to be,
+                    // we can't resume, so delete what we already have if something is on disk already.
+                    if (!Data_Recevied.IsProgressKnown && File.Exists(Set_Full_Path))
                     {
                         File.Delete(Set_Full_Path);
-                        // Reset Data_Start File Size to Correctly update the Download Percentage
-                        Data_Recevied.Data_Start = 0;
                     }
-                    else if (Data_Recevied.Data_Start < Size_Recevied)
-                    {
-                        // Try and resume by creating a new Data_Requestuest with a new start position
-                        if (Data_Recevied.Web_Response != null)
-                        {
-                            Data_Recevied.Web_Response.Close();
-                            Data_Recevied.Web_Response.Dispose();
-                        }
-                        
-                        Data_Request = Data_Recevied.GetRequest(Web_Address, Provided_Proxy_Url);
-                        ((HttpWebRequest)Data_Request).AddRange(Data_Recevied.Data_Start);
-                        ((HttpWebRequest)Data_Request).Headers["X-MTNTR-HEADER-VAL"] = Data_Recevied.Data_Start.ToString();
-                        ((HttpWebRequest)Data_Request).Headers["X-UserAgent"] = Download_Settings.Header;
-                        if (Local_Cache_Policy != null)
-                        {
-                            ((HttpWebRequest)Data_Request).CachePolicy = Local_Cache_Policy;
-                        }
-                        Data_Recevied.Web_Response = Data_Request.GetResponse();
 
-                        if (((HttpWebResponse)Data_Recevied.Web_Response).StatusCode != HttpStatusCode.PartialContent)
+                    if (Data_Recevied.IsProgressKnown && File.Exists(Set_Full_Path))
+                    {
+                        // We only support resuming on http Data_Requestuests
+                        if (!(Data_Recevied.Web_Response is HttpWebResponse))
                         {
-                            // They didn't support our resume request
                             File.Delete(Set_Full_Path);
                             Data_Recevied.Data_Start = 0;
+                        }
+                        else
+                        {
+                            // Try and start where the file on disk left off
+                            Data_Recevied.Data_Start = new FileInfo(Set_Full_Path).Length;
+
+                            // If we have a file that's bigger than what is online, then something 
+                            // strange happened. Delete it and start again.
+                            if (Data_Recevied.Data_Start > Size_Recevied)
+                            {
+                                File.Delete(Set_Full_Path);
+                                // Reset Data_Start File Size to Correctly update the Download Percentage
+                                Data_Recevied.Data_Start = 0;
+                            }
+                            else if (Data_Recevied.Data_Start < Size_Recevied)
+                            {
+                                // Try and resume by creating a new Data_Requestuest with a new start position
+                                if (Data_Recevied.Web_Response != null)
+                                {
+                                    Data_Recevied.Web_Response.Close();
+                                    Data_Recevied.Web_Response.Dispose();
+                                }
+
+                                Data_Request = Data_Recevied.GetRequest(Web_Address, Provided_Proxy_Url);
+                                ((HttpWebRequest)Data_Request).AddRange(Data_Recevied.Data_Start);
+                                ((HttpWebRequest)Data_Request).Headers["X-MTNTR-HEADER-VAL"] = Data_Recevied.Data_Start.ToString();
+                                ((HttpWebRequest)Data_Request).Headers["X-UserAgent"] = Download_Settings.Header;
+                                if (Local_Cache_Policy != null)
+                                {
+                                    ((HttpWebRequest)Data_Request).CachePolicy = Local_Cache_Policy;
+                                }
+                                Data_Recevied.Web_Response = Data_Request.GetResponse();
+
+                                if (((HttpWebResponse)Data_Recevied.Web_Response).StatusCode != HttpStatusCode.PartialContent)
+                                {
+                                    // They didn't support our resume request
+                                    File.Delete(Set_Full_Path);
+                                    Data_Recevied.Data_Start = 0;
+                                }
+                            }
                         }
                     }
                 }

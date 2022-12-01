@@ -643,7 +643,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                 num18 -= 13;
                                 IntPtr intPtr = new IntPtr(num18);
                                 IntPtr value = new IntPtr(num22);
-                                int num24 = Download_LZMA.LzmaUncompressBuf2File(text6, ref value, array3, ref intPtr, array5, outPropsSize);
+                                int num24 = Download_LZMA.LzmaUncompressBuf2File(text6, value, array3, intPtr, array5, outPropsSize);
 
                                 /* TODO: use total file lenght and extracted file length instead of files checked and total array size. */
                                 fileschecked =+ Sub_Index_Hash_Length;
@@ -926,7 +926,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             }
             IntPtr intPtr2 = new IntPtr(num);
             byte[] array3 = new byte[num];
-            _ = Download_LZMA.LzmaUncompress(array3, ref intPtr2, array, ref intPtr, array2, outPropsSize);
+            _ = Download_LZMA.LzmaUncompress(array3, intPtr2, array, intPtr, array2, outPropsSize);
             return new string(Encoding.UTF8.GetString(array3).ToCharArray());
         }
     }
