@@ -204,75 +204,54 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                     this.File_List.Add(str1, new Download_LZMA_Data_Hash_Tuple(string.Empty, string.Empty));
                 }
             }
+
             if (this.Use_Cache && File.Exists(string.Concat("HashFile", hashFileNameSuffix)))
             {
-                FileStream? fileStream = null;
-                CryptoStream? cryptoStream = null;
-                StreamReader? streamReader = null;
                 try
                 {
-                    try
+                    using (FileStream fileStream = new FileStream(string.Concat("HashFile", hashFileNameSuffix), FileMode.Open))
                     {
                         DESCryptoServiceProvider dESCryptoServiceProvider = new DESCryptoServiceProvider()
                         {
                             Key = Encoding.ASCII.GetBytes("12345678"),
                             IV = Encoding.ASCII.GetBytes("12345678")
                         };
-                        ICryptoTransform cryptoTransform = dESCryptoServiceProvider.CreateDecryptor();
-                        fileStream = new FileStream(string.Concat("HashFile", hashFileNameSuffix), FileMode.Open);
-                        cryptoStream = new CryptoStream(fileStream, cryptoTransform, CryptoStreamMode.Read);
-                        streamReader = new StreamReader(cryptoStream);
-                        string str2 = string.Empty;
-                        while (true)
+
+                        using (CryptoStream cryptoStream = new CryptoStream(fileStream, dESCryptoServiceProvider.CreateDecryptor(), CryptoStreamMode.Read))
                         {
-                            string str3 = streamReader.ReadLine();
-                            str2 = str3;
-                            if (string.IsNullOrWhiteSpace(str3))
+                            using (StreamReader streamReader = new StreamReader(cryptoStream))
                             {
-                                break;
-                            }
-                            else
-                            {
-                                string[] strArrays = str2.Split('\t');
-                                string str4 = strArrays[0];
-                                if (this.File_List.ContainsKey(str4) && File.Exists(str4) && long.Parse(strArrays[2]) == (new FileInfo(str4)).LastWriteTime.Ticks)
+                                string str2 = string.Empty;
+                                while (true)
                                 {
-                                    this.File_List[str4].Old = strArrays[1];
-                                    this.File_List[str4].Ticks = long.Parse(strArrays[2]);
+                                    string str3 = streamReader.ReadLine();
+                                    str2 = str3;
+                                    if (string.IsNullOrWhiteSpace(str3))
+                                    {
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        string[] strArrays = str2.Split('\t');
+                                        string str4 = strArrays[0];
+                                        if (this.File_List.ContainsKey(str4) && File.Exists(str4) && long.Parse(strArrays[2]) == (new FileInfo(str4)).LastWriteTime.Ticks)
+                                        {
+                                            this.File_List[str4].Old = strArrays[1];
+                                            this.File_List[str4].Ticks = long.Parse(strArrays[2]);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                    catch (CryptographicException cryptographicException1)
-                    {
-                        CryptographicException cryptographicException = cryptographicException1;
-                        streamReader = null;
-                        cryptoStream = null;
-                        this.File_List.Clear();
-                    }
-                    catch (Exception)
-                    {
-                        this.File_List.Clear();
-                    }
                 }
-                finally
+                catch (CryptographicException)
                 {
-                    if (streamReader != null)
-                    {
-                        streamReader.Close();
-                        streamReader.Dispose();
-                    }
-                    if (cryptoStream != null)
-                    {
-                        cryptoStream.Close();
-                        cryptoStream.Dispose();
-                    }
-                    if (fileStream != null)
-                    {
-                        fileStream.Close();
-                        fileStream.Dispose();
-                    }
-                    File.Delete(string.Concat("HashFile", hashFileNameSuffix));
+                    this.File_List.Clear();
+                }
+                catch (Exception)
+                {
+                    this.File_List.Clear();
                 }
             }
             Worker_Count = 0;
@@ -294,55 +273,39 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
         {
             lock (this.File_List)
             {
-                FileStream? fileStream = null;
-                CryptoStream? cryptoStream = null;
-                StreamWriter? streamWriter = null;
                 try
                 {
-                    try
+                    using (FileStream fileStream = File.Create($"HashFile{hashFileNameSuffix}"))
                     {
-                        fileStream = new FileStream(string.Concat("HashFile", hashFileNameSuffix), FileMode.Create);
-                        DESCryptoServiceProvider dESCryptoServiceProvider = new DESCryptoServiceProvider();
-                        byte[] bytes = Encoding.ASCII.GetBytes("12345678");
-                        byte[] numArray = bytes;
-                        dESCryptoServiceProvider.IV = bytes;
-                        dESCryptoServiceProvider.Key = numArray;
-                        cryptoStream = new CryptoStream(fileStream, dESCryptoServiceProvider.CreateEncryptor(), CryptoStreamMode.Write);
-                        streamWriter = new StreamWriter(cryptoStream);
-                        foreach (string key in this.File_List.Keys)
+                        using (DESCryptoServiceProvider dESCryptoServiceProvider = new DESCryptoServiceProvider())
                         {
-                            string empty = string.Empty;
-                            empty = (!writeOldHashes ? this.File_List[key].New : this.File_List[key].Old);
-                            if (!File.Exists(key) || string.IsNullOrWhiteSpace(empty))
+                            using (CryptoStream cryptoStream = new CryptoStream(fileStream, dESCryptoServiceProvider.CreateEncryptor(), CryptoStreamMode.Write))
                             {
-                                continue;
+                                using (StreamWriter streamWriter = new StreamWriter(cryptoStream))
+                                {
+                                    dESCryptoServiceProvider.IV = Encoding.ASCII.GetBytes("12345678");
+                                    dESCryptoServiceProvider.Key = dESCryptoServiceProvider.IV;
+
+                                    foreach (string key in this.File_List.Keys)
+                                    {
+                                        string hash = writeOldHashes ? this.File_List[key].Old : this.File_List[key].New;
+
+                                        if (!File.Exists(key) || string.IsNullOrWhiteSpace(hash))
+                                        {
+                                            continue;
+                                        }
+
+                                        DateTime lastWriteTime = new FileInfo(key).LastWriteTime;
+                                        streamWriter.WriteLine($"{key}\t{hash}\t{lastWriteTime.Ticks}");
+                                    }
+                                }
                             }
-                            DateTime lastWriteTime = (new FileInfo(key)).LastWriteTime;
-                            streamWriter.WriteLine(string.Format("{0}\t{1}\t{2}", key, empty, lastWriteTime.Ticks));
                         }
                     }
-                    catch (Exception) 
-                    { 
-
-                    }
                 }
-                finally
+                catch (Exception)
                 {
-                    if (streamWriter != null)
-                    {
-                        streamWriter.Close();
-                        streamWriter.Dispose();
-                    }
-                    if (cryptoStream != null)
-                    {
-                        cryptoStream.Close();
-                        cryptoStream.Dispose();
-                    }
-                    if (fileStream != null)
-                    {
-                        fileStream.Close();
-                        fileStream.Dispose();
-                    }
+                    /* Ignore Exception */
                 }
             }
         }

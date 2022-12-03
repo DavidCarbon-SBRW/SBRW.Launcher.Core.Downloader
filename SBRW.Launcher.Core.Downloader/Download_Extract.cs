@@ -203,13 +203,6 @@ namespace SBRW.Launcher.Core.Downloader
                                     {
                                         Exception_Router(true, Error);
                                     }
-                                    finally
-                                    {
-                                        if (!Download_Settings.System_Unix)
-                                        {
-                                            GC.Collect();
-                                        }
-                                    }
                                 }
                                 else
                                 {

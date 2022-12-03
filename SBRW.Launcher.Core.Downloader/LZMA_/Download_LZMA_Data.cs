@@ -139,14 +139,7 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             }
             catch (Exception)
             {
-
-            }
-            finally
-            {
-                if (!Download_Settings.System_Unix)
-                {
-                    GC.Collect();
-                }
+                /* Ignore Exception */
             }
         }
         /// <summary>
@@ -239,11 +232,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
             if (Live_Download_Data.Error != null && this.Internal_Web_Error != null && !MStopFlag)
             {
                 this.Internal_Web_Error(this, new Download_Exception_EventArgs(Live_Download_Data.Error, DateTime.Now));
-            }
-
-            if (!Download_Settings.System_Unix)
-            {
-                GC.Collect();
             }
         }
 
@@ -560,10 +548,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                                         this.MDownloadManager.CancelDownload(string.Format("{0}/section{1}.dat", text, l));
                                     }
                                     array2 = null;
-                                    if (!Download_Settings.System_Unix)
-                                    {
-                                        GC.Collect();
-                                    }
                                     array2 = this.MDownloadManager.GetFile(text7);
                                     if (array2 == null)
                                     {
@@ -706,10 +690,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                     Download_LZMA_Data_Hash.Live_Instance.Clear();
                 }
                 this.MDownloadManager.Clear();
-                if (!Download_Settings.System_Unix)
-                {
-                    GC.Collect();
-                }
                 this.MDownloading = false;
             }
         }
@@ -847,10 +827,6 @@ namespace SBRW.Launcher.Core.Downloader.LZMA_
                 if (flag2)
                 {
                     Download_LZMA_Data_Hash.Live_Instance.Clear();
-                }
-                if (!Download_Settings.System_Unix)
-                {
-                    GC.Collect();
                 }
             }
         }

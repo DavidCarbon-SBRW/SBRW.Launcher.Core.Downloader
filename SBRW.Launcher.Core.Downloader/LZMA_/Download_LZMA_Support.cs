@@ -16,7 +16,7 @@
         /// <returns></returns>
         public static string SpeechFiles(string Language = "")
         {
-            string CurrentLang = (!string.IsNullOrWhiteSpace(Language)) ? Language.ToLower() : string.Empty;
+            string CurrentLang = (!string.IsNullOrWhiteSpace(Language)) ? Language.ToLowerInvariant() : string.Empty;
             if (CurrentLang == "eng")
             {
                 Speech_Language = "en";
