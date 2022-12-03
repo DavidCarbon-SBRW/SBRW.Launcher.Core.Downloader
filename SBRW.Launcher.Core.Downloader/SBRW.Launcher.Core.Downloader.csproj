@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
 	<LangVersion>8.0</LangVersion>
 	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	  <Version>0.2.1</Version>
+	  <Version>0.2.2</Version>
 	  <Authors>Soapbox Race World - Launcher Division</Authors>
 	  <Company>Soapbox Race World</Company>
 	  <Copyright>© Soapbox Race World</Copyright>

@@ -51,11 +51,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        internal static string Header = "SBRW.Launcher.Core.Downloader.LZMA Version " + Version + " (+https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader)";
-        /// <summary>
-        /// 
-        /// </summary>
-        internal static string Header_LZMA = "SBRW.Launcher.Core.Downloader Version " + Version + " (+https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader)";
+        internal static string Header = "SBRW.Launcher.Core.Downloader Version " + Version + " (+https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader)";
         /// <summary>
         /// Global Boolen for Web Call Timeout before termining the connection
         /// </summary>
