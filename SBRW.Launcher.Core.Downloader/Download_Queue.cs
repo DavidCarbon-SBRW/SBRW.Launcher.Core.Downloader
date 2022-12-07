@@ -24,11 +24,20 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public string Download_Location { get; internal set; } = string.Empty;
-        /// <summary>
-        /// 
-        /// </summary>
-        public RequestCachePolicy? Cache_Policy { get; set; }
+        public string Download_Location 
+        { 
+            get 
+            {
+                if (Download_System != null)
+                {
+                    return Download_System.Full_Path; 
+                }
+                else
+                {
+                    return string.Empty;
+                }
+            }
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -158,7 +167,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <returns></returns>
         public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url, string Provided_File_Name, RequestCachePolicy? Local_Cache_Policy)
         {
-            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, string.Empty, Local_Cache_Policy, null);
+            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, null);
         }
         /// <summary>
         /// 
@@ -176,18 +185,13 @@ namespace SBRW.Launcher.Core.Downloader
             try
             {
                 Start_Time = DateTime.Now;
-
-                Download_System = Download_Client.Create(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, Local_Web_Proxy);
-
-                Location_Folder = Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty);
-
-                this.Download_Location = Download_System.Full_Path;
+                Download_System = new Download_Client().Create(Web_Address, Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty), Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, Local_Web_Proxy);
 
                 if (!File.Exists(Download_System.Full_Path))
                 {
-                    if (!Directory.Exists(Path.GetDirectoryName(Download_System.Full_Path)))
+                    if (!Directory.Exists(Download_System.Folder_Name))
                     {
-                        Directory.CreateDirectory(Path.GetDirectoryName(Download_System.Full_Path));
+                        Directory.CreateDirectory(Download_System.Folder_Name);
                     }
 
                     File.Create(Download_System.Full_Path).Close();
