@@ -23,11 +23,15 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public static string Set_File_Name { get; internal set; } = string.Empty;
+        public static string File_Name { get; internal set; } = string.Empty;
         /// <summary>
         /// 
         /// </summary>
-        public static string Set_Full_Path { get; internal set; } = string.Empty;
+        public static string Folder_Name { get; internal set; } = string.Empty;
+        /// <summary>
+        /// 
+        /// </summary>
+        public static string Full_Path { get; internal set; } = string.Empty;
         /// <summary>
         /// 
         /// </summary>
@@ -35,28 +39,28 @@ namespace SBRW.Launcher.Core.Downloader
         /// <returns></returns>
         public static Download_Client Create(string Web_Address)
         {
-            return Create(Web_Address, "/");
+            return Create(Web_Address, AppDomain.CurrentDomain.BaseDirectory);
         }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="Web_Address"></param>
-        /// <param name="Location_File_Path"></param>
+        /// <param name="Location_Folder"></param>
         /// <returns></returns>
-        public static Download_Client Create(string Web_Address, string Location_File_Path)
+        public static Download_Client Create(string Web_Address, string Location_Folder)
         {
-            return Create(Web_Address, Location_File_Path, string.Empty);
+            return Create(Web_Address, Location_Folder, string.Empty);
         }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="Web_Address"></param>
-        /// <param name="Location_File_Path"></param>
+        /// <param name="Location_Folder"></param>
         /// <param name="Provided_Arhive_File"></param>
         /// <returns></returns>
-        public static Download_Client Create(string Web_Address, string Location_File_Path, string Provided_Arhive_File)
+        public static Download_Client Create(string Web_Address, string Location_Folder, string Provided_Arhive_File)
         {
-            return Create( Web_Address, Location_File_Path, Provided_Arhive_File, - 1);
+            return Create( Web_Address, Location_Folder, Provided_Arhive_File, - 1);
         }
         /// <summary>
         /// 
@@ -81,7 +85,21 @@ namespace SBRW.Launcher.Core.Downloader
         /// <returns></returns>
         public static Download_Client Create(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url)
         {
-            return Create(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, string.Empty, null);
+            return Create(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, string.Empty);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        /// <param name="Provided_File_Size"></param>
+        /// <param name="Provided_Proxy_Url"></param>
+        /// <param name="Provided_File_Name"></param>
+        /// <returns></returns>
+        public static Download_Client Create(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url, string Provided_File_Name)
+        {
+            return Create(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, null);
         }
         /// <summary>
         /// 
@@ -96,7 +114,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// <returns></returns>
         public static Download_Client Create(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url, string Provided_File_Name, RequestCachePolicy? Local_Cache_Policy)
         {
-            return Create(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, string.Empty, Local_Cache_Policy, null);
+            return Create(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, null);
         }
         /// <summary>
         /// 
@@ -184,65 +202,64 @@ namespace SBRW.Launcher.Core.Downloader
                             string.Format("Could not download \"{0}\" - FTP server closed the connection.", Web_Address));
                     }
                 }
-                else
+
+                // Take the name of the file given to use from the web server.
+                File_Name = !string.IsNullOrWhiteSpace(Provided_File_Name) ? Provided_File_Name : Path.GetFileName(new Uri(Web_Address).Equals(Data_Recevied.Web_Response.ResponseUri) ? Web_Address : Data_Recevied.Web_Response.ResponseUri.OriginalString);
+                Folder_Name = File.Exists(Provided_Arhive_File) ? Path.GetDirectoryName(Provided_Arhive_File) : Path.Combine(Location_Folder, ".Launcher", "Downloads");
+                Full_Path = File.Exists(Provided_Arhive_File) ? Provided_Arhive_File : Path.Combine(Folder_Name, File_Name);
+
+                // If we don't know how big the file is supposed to be,
+                // we can't resume, so delete what we already have if something is on disk already.
+                if (!Data_Recevied.IsProgressKnown && File.Exists(Full_Path))
                 {
-                    // Take the name of the file given to use from the web server.
-                    Set_File_Name = Path.GetFileName(!string.IsNullOrWhiteSpace(Provided_File_Name) ? Provided_File_Name : Data_Recevied.Web_Response.ResponseUri.ToString());
-                    Set_Full_Path = File.Exists(Provided_Arhive_File) ? Provided_Arhive_File : Path.Combine(Location_Folder, ".Launcher", "Downloads", Set_File_Name);
+                    File.Delete(Full_Path);
+                }
 
-                    // If we don't know how big the file is supposed to be,
-                    // we can't resume, so delete what we already have if something is on disk already.
-                    if (!Data_Recevied.IsProgressKnown && File.Exists(Set_Full_Path))
+                if (Data_Recevied.IsProgressKnown && File.Exists(Full_Path))
+                {
+                    // We only support resuming on http Data_Requestuests
+                    if (!(Data_Recevied.Web_Response is HttpWebResponse))
                     {
-                        File.Delete(Set_Full_Path);
+                        File.Delete(Full_Path);
+                        Data_Recevied.Data_Start = 0;
                     }
-
-                    if (Data_Recevied.IsProgressKnown && File.Exists(Set_Full_Path))
+                    else
                     {
-                        // We only support resuming on http Data_Requestuests
-                        if (!(Data_Recevied.Web_Response is HttpWebResponse))
+                        // Try and start where the file on disk left off
+                        Data_Recevied.Data_Start = new FileInfo(Full_Path).Length;
+
+                        // If we have a file that's bigger than what is online, then something 
+                        // strange happened. Delete it and start again.
+                        if (Data_Recevied.Data_Start > Size_Recevied)
                         {
-                            File.Delete(Set_Full_Path);
+                            File.Delete(Full_Path);
+                            // Reset Data_Start File Size to Correctly update the Download Percentage
                             Data_Recevied.Data_Start = 0;
                         }
-                        else
+                        else if (Data_Recevied.Data_Start < Size_Recevied)
                         {
-                            // Try and start where the file on disk left off
-                            Data_Recevied.Data_Start = new FileInfo(Set_Full_Path).Length;
-
-                            // If we have a file that's bigger than what is online, then something 
-                            // strange happened. Delete it and start again.
-                            if (Data_Recevied.Data_Start > Size_Recevied)
+                            // Try and resume by creating a new Data_Requestuest with a new start position
+                            if (Data_Recevied.Web_Response != null)
                             {
-                                File.Delete(Set_Full_Path);
-                                // Reset Data_Start File Size to Correctly update the Download Percentage
-                                Data_Recevied.Data_Start = 0;
+                                Data_Recevied.Web_Response.Close();
+                                Data_Recevied.Web_Response.Dispose();
                             }
-                            else if (Data_Recevied.Data_Start < Size_Recevied)
+
+                            Data_Request = Data_Recevied.GetRequest(Web_Address, Provided_Proxy_Url);
+                            ((HttpWebRequest)Data_Request).AddRange(Data_Recevied.Data_Start);
+                            ((HttpWebRequest)Data_Request).Headers["X-MTNTR-HEADER-VAL"] = Data_Recevied.Data_Start.ToString();
+                            ((HttpWebRequest)Data_Request).Headers["X-UserAgent"] = Download_Settings.Header;
+                            if (Local_Cache_Policy != null)
                             {
-                                // Try and resume by creating a new Data_Requestuest with a new start position
-                                if (Data_Recevied.Web_Response != null)
-                                {
-                                    Data_Recevied.Web_Response.Close();
-                                    Data_Recevied.Web_Response.Dispose();
-                                }
+                                ((HttpWebRequest)Data_Request).CachePolicy = Local_Cache_Policy;
+                            }
+                            Data_Recevied.Web_Response = Data_Request.GetResponse();
 
-                                Data_Request = Data_Recevied.GetRequest(Web_Address, Provided_Proxy_Url);
-                                ((HttpWebRequest)Data_Request).AddRange(Data_Recevied.Data_Start);
-                                ((HttpWebRequest)Data_Request).Headers["X-MTNTR-HEADER-VAL"] = Data_Recevied.Data_Start.ToString();
-                                ((HttpWebRequest)Data_Request).Headers["X-UserAgent"] = Download_Settings.Header;
-                                if (Local_Cache_Policy != null)
-                                {
-                                    ((HttpWebRequest)Data_Request).CachePolicy = Local_Cache_Policy;
-                                }
-                                Data_Recevied.Web_Response = Data_Request.GetResponse();
-
-                                if (((HttpWebResponse)Data_Recevied.Web_Response).StatusCode != HttpStatusCode.PartialContent)
-                                {
-                                    // They didn't support our resume request
-                                    File.Delete(Set_Full_Path);
-                                    Data_Recevied.Data_Start = 0;
-                                }
+                            if (((HttpWebResponse)Data_Recevied.Web_Response).StatusCode != HttpStatusCode.PartialContent)
+                            {
+                                // They didn't support our resume request
+                                File.Delete(Full_Path);
+                                Data_Recevied.Data_Start = 0;
                             }
                         }
                     }
@@ -404,11 +421,31 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public string Full_Path
+        public string FileName
         {
             get
             {
-                return Set_Full_Path;
+                return File_Name;
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string FolderName
+        {
+            get
+            {
+                return Folder_Name;
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string FullPath
+        {
+            get
+            {
+                return Full_Path;
             }
         }
         #endregion
