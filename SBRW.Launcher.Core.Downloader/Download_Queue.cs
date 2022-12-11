@@ -30,7 +30,7 @@ namespace SBRW.Launcher.Core.Downloader
             {
                 if (Download_System != null)
                 {
-                    return Download_System.Full_Path; 
+                    return Download_System.FullPath; 
                 }
                 else
                 {
@@ -198,16 +198,16 @@ namespace SBRW.Launcher.Core.Downloader
             try
             {
                 Start_Time = DateTime.Now;
-                Download_System = new Download_Client().Create(Web_Address, Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty), Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, Local_Web_Proxy);
+                Download_System = Download_Client.Create(Web_Address, Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty), Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, Local_Web_Proxy);
 
-                if (!File.Exists(Download_System.Full_Path))
+                if (!File.Exists(Download_System.FullPath))
                 {
-                    if (!Directory.Exists(Download_System.Folder_Name))
+                    if (!Directory.Exists(Download_System.FolderName))
                     {
-                        Directory.CreateDirectory(Download_System.Folder_Name);
+                        Directory.CreateDirectory(Download_System.FolderName);
                     }
 
-                    File.Create(Download_System.Full_Path).Close();
+                    File.Create(Download_System.FullPath).Close();
                 }
 
                 byte[] buffer = new byte[Download_Block_Size];
@@ -225,7 +225,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                     totalDownloaded += readCount;
 
-                    SaveToFile(buffer, readCount, Download_System.Full_Path);
+                    SaveToFile(buffer, readCount, Download_System.FullPath);
 
                     if (Download_System.IsProgressKnown && (this.Live_Progress != null)) 
                     {
@@ -241,7 +241,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                 if (this.Complete != null && !Cancel)
                 {
-                    this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.Full_Path, DateTime.Now));
+                    this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.FullPath, DateTime.Now));
                 }
             }
             catch(WebException Error_Caught)
