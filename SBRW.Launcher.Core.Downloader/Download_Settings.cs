@@ -21,7 +21,7 @@ namespace SBRW.Launcher.Core.Downloader
                     {
                         if (File.Exists("SBRW.Launcher.Core.Downloader.dll"))
                         {
-                            Version_Cache = FileVersionInfo.GetVersionInfo("SBRW.Launcher.Core.Downloader.dll").FileVersion;
+                            Version_Cache = FileVersionInfo.GetVersionInfo("SBRW.Launcher.Core.Downloader.dll").FileVersion??string.Empty;
                         }
                     }
                     catch

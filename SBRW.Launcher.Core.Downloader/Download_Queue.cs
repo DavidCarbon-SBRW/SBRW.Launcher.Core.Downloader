@@ -81,7 +81,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         /// <param name="Event_Hook"></param>
         /// <param name="Exception_Caught"></param>
-        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught)
+        internal void eException_Router(bool Event_Hook, Exception Exception_Caught)
         {
             Exception_Router(Event_Hook, Exception_Caught, false);
         }
@@ -198,17 +198,7 @@ namespace SBRW.Launcher.Core.Downloader
             try
             {
                 Start_Time = DateTime.Now;
-                Download_System = new Download_Client().Create(Web_Address, Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty), Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, Local_Web_Proxy);
-
-                if (!File.Exists(Download_System.Full_Path))
-                {
-                    if (!Directory.Exists(Download_System.Folder_Name))
-                    {
-                        Directory.CreateDirectory(Download_System.Folder_Name);
-                    }
-
-                    File.Create(Download_System.Full_Path).Close();
-                }
+                Download_System = Download_Client.Create(Web_Address, !string.IsNullOrWhiteSpace(Location_Folder) ? Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty) : string.Empty, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, Local_Web_Proxy);
 
                 byte[] buffer = new byte[Download_Block_Size];
                 int readCount;
@@ -244,19 +234,6 @@ namespace SBRW.Launcher.Core.Downloader
                     this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.Full_Path, DateTime.Now));
                 }
             }
-            catch(WebException Error_Caught)
-            {
-                Exception_Router(true, Error_Caught, true);
-            }
-            catch (UriFormatException Error)
-            {
-                Exception_Router(true, new ArgumentException(
-                    string.Format("Could not parse the URL \"{0}\" - it's either malformed or is an unknown protocol.", Web_Address), Error));
-            }
-            catch (Exception Error)
-            {
-                Exception_Router(true, Error);
-            }
             finally
             {
                 if (Download_System != null)
@@ -282,11 +259,11 @@ namespace SBRW.Launcher.Core.Downloader
             // validate input
             if (Web_Address_List == null)
             {
-                Exception_Router(true, new ArgumentNullException("Web_Address_List"));
+                //Exception_Router(true, new ArgumentNullException("Web_Address_List"));
             }
             else if (Web_Address_List.Count == 0)
             {
-                Exception_Router(true, new ArgumentException("EMPTY Web_Address_List"));
+                //Exception_Router(true, new ArgumentException("EMPTY Web_Address_List"));
             }
             else
             {
@@ -314,7 +291,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                 if (Web_Address_Exception != null)
                 {
-                    Exception_Router(true, Web_Address_Exception);
+                    //Exception_Router(true, Web_Address_Exception);
                 }
             }
         }
@@ -407,14 +384,6 @@ namespace SBRW.Launcher.Core.Downloader
             {
                 Live_File = File.Open(fileName, FileMode.Append, FileAccess.Write);
                 Live_File.Write(buffer, 0, count);
-            }
-            catch (ArgumentException Error)
-            {
-                Exception_Router(true, Error);
-            }
-            catch (Exception Error)
-            {
-                Exception_Router(true, Error);
             }
             finally
             {
