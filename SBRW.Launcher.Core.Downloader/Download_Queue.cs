@@ -14,9 +14,10 @@ namespace SBRW.Launcher.Core.Downloader
     public class Download_Queue
     {
         /// <summary>
-        /// 
+        /// Read the file in chunks (in bytes)
         /// </summary>
-        private int Download_Block_Size { get { return 10240 * 5; } }
+        /// <remarks>Default is 1KB</remarks>
+        public int Download_Block_Size { get; set; } = 1024;
         /// <summary>
         /// 
         /// </summary>
@@ -30,7 +31,7 @@ namespace SBRW.Launcher.Core.Downloader
             {
                 if (Download_System != null)
                 {
-                    return Download_System.Full_Path; 
+                    return Download_System.FullPath; 
                 }
                 else
                 {
@@ -201,37 +202,45 @@ namespace SBRW.Launcher.Core.Downloader
                 Download_System = Download_Client.Create(Web_Address, !string.IsNullOrWhiteSpace(Location_Folder) ? Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty) : string.Empty, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, Local_Web_Proxy);
 
                 byte[] buffer = new byte[Download_Block_Size];
+                long totalDownloaded = Download_System.StartPoint;
                 int readCount;
 
-                long totalDownloaded = Download_System.StartPoint;
-
-                while (((readCount = Download_System.DownloadStream.Read(buffer, 0, Download_Block_Size)) > 0) && !Cancel)
+                using (Stream Live_Stream = Download_System.DownloadStream)
                 {
-                    if (Cancel)
+                    using (BinaryReader Live_Reader = new BinaryReader(Live_Stream)) 
                     {
-                        Download_System.Close();
-                        break;
+                        using (FileStream Live_Writer = new FileStream(Download_System.FullPath, FileMode.Append, FileAccess.Write))
+                        {
+                            while ((readCount = Live_Reader.Read(buffer, 0, Download_Block_Size)) > 0)
+                            {
+                                if (Cancel)
+                                {
+                                    Download_System.Close();
+                                    break;
+                                }
+
+                                totalDownloaded += readCount;
+
+                                Live_Writer.Write(buffer, 0, readCount);
+
+                                if (Download_System.IsProgressKnown && (this.Live_Progress != null))
+                                {
+                                    this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_System.FileSize, totalDownloaded, Start_Time));
+                                }
+
+                                if (Cancel)
+                                {
+                                    Download_System.Close();
+                                    break;
+                                }
+                            }
+
+                            if (this.Complete != null && !Cancel)
+                            {
+                                this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.FullPath, DateTime.Now));
+                            }
+                        }
                     }
-
-                    totalDownloaded += readCount;
-
-                    SaveToFile(buffer, readCount, Download_System.Full_Path);
-
-                    if (Download_System.IsProgressKnown && (this.Live_Progress != null)) 
-                    {
-                        this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_System.FileSize, totalDownloaded, Start_Time));
-                    }
-
-                    if (Cancel)
-                    {
-                        Download_System.Close();
-                        break;
-                    }
-                }
-
-                if (this.Complete != null && !Cancel)
-                {
-                    this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.Full_Path, DateTime.Now));
                 }
             }
             finally

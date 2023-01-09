@@ -14,8 +14,11 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        private WebResponse? Web_Response { get; set; }
-        private Stream? Live_Stream { get; set; }
+        public WebResponse? Web_Response { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public Stream? Live_Stream { get; set; }
         private long Data_Size { get; set; }
         private long Data_Start { get; set; }
         private IWebProxy? Web_Proxy { get; set; }
