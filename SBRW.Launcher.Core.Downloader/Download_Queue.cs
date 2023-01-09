@@ -14,9 +14,10 @@ namespace SBRW.Launcher.Core.Downloader
     public class Download_Queue
     {
         /// <summary>
-        /// 
+        /// Read the file in chunks (in bytes)
         /// </summary>
-        private int Download_Block_Size { get { return 10240 * 5; } }
+        /// <remarks>Default is 1KB</remarks>
+        public int Download_Block_Size { get; set; } = 1024;
         /// <summary>
         /// 
         /// </summary>
@@ -211,37 +212,45 @@ namespace SBRW.Launcher.Core.Downloader
                 }
 
                 byte[] buffer = new byte[Download_Block_Size];
+                long totalDownloaded = Download_System.StartPoint;
                 int readCount;
 
-                long totalDownloaded = Download_System.StartPoint;
-
-                while (((readCount = Download_System.DownloadStream.Read(buffer, 0, Download_Block_Size)) > 0) && !Cancel)
+                using (Stream Live_Stream = Download_System.DownloadStream)
                 {
-                    if (Cancel)
+                    using (BinaryReader Live_Reader = new BinaryReader(Live_Stream)) 
                     {
-                        Download_System.Close();
-                        break;
+                        using (FileStream Live_Writer = new FileStream(Download_System.FullPath, FileMode.Append, FileAccess.Write))
+                        {
+                            while ((readCount = Live_Reader.Read(buffer, 0, Download_Block_Size)) > 0)
+                            {
+                                if (Cancel)
+                                {
+                                    Download_System.Close();
+                                    break;
+                                }
+
+                                totalDownloaded += readCount;
+
+                                Live_Writer.Write(buffer, 0, readCount);
+
+                                if (Download_System.IsProgressKnown && (this.Live_Progress != null))
+                                {
+                                    this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_System.FileSize, totalDownloaded, Start_Time));
+                                }
+
+                                if (Cancel)
+                                {
+                                    Download_System.Close();
+                                    break;
+                                }
+                            }
+
+                            if (this.Complete != null && !Cancel)
+                            {
+                                this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.FullPath, DateTime.Now));
+                            }
+                        }
                     }
-
-                    totalDownloaded += readCount;
-
-                    SaveToFile(buffer, readCount, Download_System.FullPath);
-
-                    if (Download_System.IsProgressKnown && (this.Live_Progress != null)) 
-                    {
-                        this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_System.FileSize, totalDownloaded, Start_Time));
-                    }
-
-                    if (Cancel)
-                    {
-                        Download_System.Close();
-                        break;
-                    }
-                }
-
-                if (this.Complete != null && !Cancel)
-                {
-                    this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.FullPath, DateTime.Now));
                 }
             }
             catch(WebException Error_Caught)
@@ -389,38 +398,6 @@ namespace SBRW.Launcher.Core.Downloader
                             }
                         }
                     }
-                }
-            }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="buffer"></param>
-        /// <param name="count"></param>
-        /// <param name="fileName"></param>
-        /// <exception cref="ArgumentException"></exception>
-        private void SaveToFile(byte[] buffer, int count, string fileName)
-        {
-            FileStream? Live_File = null;
-
-            try
-            {
-                Live_File = File.Open(fileName, FileMode.Append, FileAccess.Write);
-                Live_File.Write(buffer, 0, count);
-            }
-            catch (ArgumentException Error)
-            {
-                Exception_Router(true, Error);
-            }
-            catch (Exception Error)
-            {
-                Exception_Router(true, Error);
-            }
-            finally
-            {
-                if (Live_File != null)
-                {
-                    Live_File.Close();
                 }
             }
         }
