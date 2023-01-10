@@ -1,6 +1,8 @@
 ﻿using SBRW.Launcher.Core.Downloader;
 using System;
 using System.IO;
+using System.Net;
+using System.Reflection.Emit;
 
 namespace SBRW.Library.Debugger
 {
@@ -12,6 +14,7 @@ namespace SBRW.Library.Debugger
         public static bool Pack_SBRW_Downloader_Unpack_Lock { get; set; }
 
         private static string GameFolderPath { get { return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "GameFiles"); } }
+        private static string GamePackPath { get { return Path.Combine(GameFolderPath, ".Launcher", "Downloads", "GameFiles.sbrwpack"); } }
         private static string Launcher_CDN { get; set; } = "http://g2-sbrw.davidcarbon.download";
 
         static void Main(string[] args)
@@ -41,25 +44,55 @@ namespace SBRW.Library.Debugger
             {
                 Console.WriteLine("Downloading: Core Game Files Package".ToUpper());
 
-                Pack_SBRW_Downloader = new Download_Queue();
-                /* @DavidCarbon or @Zacam (Translation Strings Required) */
-                Pack_SBRW_Downloader.Live_Progress += (x, D_Live_Events) =>
+                // Get the size of the local file.
+                long localFileSize = 0;
+                if (File.Exists(GameFolderPath))
                 {
-                    if (!Pack_SBRW_Downloader.Cancel)
-                    {
-                        Console.WriteLine("(" + D_Live_Events.Download_Percentage + "%)");
-                    }
-                };
-                Pack_SBRW_Downloader.Complete += (x, D_Live_Events) =>
+                    FileInfo info = new FileInfo(GameFolderPath);
+                    localFileSize = info.Length;
+                }
+
+                // Create a new HttpWebRequest instance.
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Launcher_CDN + "/GameFiles.sbrwpack");
+
+                // Set the start point for the download.
+                request.AddRange(localFileSize);
+
+                // Read the file in chunks of 1KB.
+                int chunkSize = 1024;
+                byte[] buffer = new byte[chunkSize];
+                int bytesRead;
+
+                // Send the request and get the response.
+                using (WebResponse response = request.GetResponse())
                 {
-                    if (D_Live_Events.Complete && x != null)
+                    // Get the stream containing the response.
+                    using (Stream stream = response.GetResponseStream())
                     {
-                        Console.WriteLine("Downloaded: SBRW Game Files Package".ToUpper());
+                        // Use a BinaryReader to read the file in small chunks.
+                        using (BinaryReader reader = new BinaryReader(stream))
+                        {
+                            // Use a FileStream to write the file to the local file system.
+                            using (FileStream writer = new FileStream(GamePackPath, FileMode.Append))
+                            {
+                                
+                                while ((bytesRead = reader.Read(buffer, 0, buffer.Length)) > 0)
+                                {
+                                    // Write the chunk to the local file.
+                                    writer.Write(buffer, 0, bytesRead);
+
+                                    // Calculate the download progress.
+                                    double progress = (localFileSize + writer.Length) / (double)response.ContentLength;
+
+                                    // Show the percentage downloaded.
+                                    Console.WriteLine("Current Size:" + localFileSize + writer.Length + " (" + (int)(progress * 100) + " %)");
+                                }
+                            }
+                        }
                     }
-                };
-                /* Main Note: Current Revision File Size (in long) is: 3862102244 */
-                Pack_SBRW_Downloader.Download(Launcher_CDN + "/GameFiles.sbrwpack", GameFolderPath, string.Empty, 3862102244,
-                    Launcher_CDN, "GameFiles.sbrwpack");
+                }
+
+                Console.WriteLine("Downloaded: SBRW Game Files Package".ToUpper());
             }
         }
     }

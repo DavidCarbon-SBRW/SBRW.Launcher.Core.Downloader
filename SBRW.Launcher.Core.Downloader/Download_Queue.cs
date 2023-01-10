@@ -31,7 +31,7 @@ namespace SBRW.Launcher.Core.Downloader
             {
                 if (Download_System != null)
                 {
-                    return Download_System.FullPath; 
+                    return Download_System.Full_Path; 
                 }
                 else
                 {
@@ -209,7 +209,7 @@ namespace SBRW.Launcher.Core.Downloader
                 {
                     using (BinaryReader Live_Reader = new BinaryReader(Live_Stream)) 
                     {
-                        using (FileStream Live_Writer = new FileStream(Download_System.FullPath, FileMode.Append, FileAccess.Write))
+                        using (FileStream Live_Writer = new FileStream(Download_System.Full_Path, FileMode.Append, FileAccess.Write))
                         {
                             while ((readCount = Live_Reader.Read(buffer, 0, Download_Block_Size)) > 0)
                             {
@@ -237,7 +237,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                             if (this.Complete != null && !Cancel)
                             {
-                                this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.FullPath, DateTime.Now));
+                                this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.Full_Path, DateTime.Now));
                             }
                         }
                     }
