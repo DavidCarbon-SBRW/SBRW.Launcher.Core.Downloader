@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Net.Cache;
 
 namespace SBRW.Launcher.Core.Downloader
 {
@@ -25,28 +24,31 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public string Download_Location 
-        { 
-            get 
-            {
-                if (Download_System != null)
-                {
-                    return Download_System.FullPath; 
-                }
-                else
-                {
-                    return string.Empty;
-                }
-            }
-        }
+        public string File_Name { get; set; } = "GameFiles.sbrwpack";
         /// <summary>
         /// 
         /// </summary>
-        private Download_Client? Download_System { get; set; }
+        public long File_Size { get; set; } = 0;
         /// <summary>
         /// 
         /// </summary>
-        public DateTime Start_Time { get; internal set; }
+        public string Folder_Path { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Game Files");
+        /// <summary>
+        /// 
+        /// </summary>
+        public string File_Path { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Game Files", ".Launcher", "Downloads", "GameFiles.sbrwpack");
+        /// <summary>
+        /// 
+        /// </summary>
+        public DateTime Start_Time { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Web_URL { get; set; } = "http://localhost";
+        /// <summary>
+        /// 
+        /// </summary>
+        public long Web_File_Size { get; set; } = 3862102244;
         /// <summary>
         /// 
         /// </summary>
@@ -112,23 +114,36 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_File_Path"></param>
-        /// <returns></returns>
-        public void Download(string Web_Address, string Location_File_Path)
+        public void Download()
         {
-            Download(Web_Address, Location_File_Path, string.Empty);
+            Download(Web_URL, Folder_Path, File_Path, Web_File_Size, File_Name);
         }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="Web_Address"></param>
-        /// <param name="Location_File_Path"></param>
-        /// <param name="Provided_Arhive_File"></param>
-        /// <returns></returns>
-        public void Download(string Web_Address, string Location_File_Path, string Provided_Arhive_File)
+        public void Download(string Web_Address)
         {
-            Download(Web_Address, Location_File_Path, Provided_Arhive_File, -1);
+            Download(Web_Address, string.Empty);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        public void Download(string Web_Address, string Location_Folder)
+        {
+            Download(Web_Address, Location_Folder, string.Empty);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File)
+        {
+            Download(Web_Address, Location_Folder, Provided_Arhive_File, 3862102244);
         }
         /// <summary>
         /// 
@@ -137,10 +152,9 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Location_Folder"></param>
         /// <param name="Provided_Arhive_File"></param>
         /// <param name="Provided_File_Size"></param>
-        /// <returns></returns>
         public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size)
         {
-            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, string.Empty);
+            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, "GameFiles.sbrwpack");
         }
         /// <summary>
         /// 
@@ -149,105 +163,99 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Location_Folder"></param>
         /// <param name="Provided_Arhive_File"></param>
         /// <param name="Provided_File_Size"></param>
-        /// <param name="Provided_Proxy_Url"></param>
-        /// <returns></returns>
-        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url)
-        {
-            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, string.Empty);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        /// <param name="Provided_Arhive_File"></param>
-        /// <param name="Provided_File_Size"></param>
-        /// <param name="Provided_Proxy_Url"></param>
         /// <param name="Provided_File_Name"></param>
-        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url, string Provided_File_Name)
-        {
-            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, null);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        /// <param name="Provided_Arhive_File"></param>
-        /// <param name="Provided_File_Size"></param>
-        /// <param name="Provided_Proxy_Url"></param>
-        /// <param name="Provided_File_Name"></param>
-        /// <param name="Local_Cache_Policy"></param>
-        /// <returns></returns>
-        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url, string Provided_File_Name, RequestCachePolicy? Local_Cache_Policy)
-        {
-            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, null);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        /// <param name="Provided_Arhive_File"></param>
-        /// <param name="Provided_File_Size"></param>
-        /// <param name="Provided_Proxy_Url"></param>
-        /// <param name="Provided_File_Name"></param>
-        /// <param name="Local_Cache_Policy"></param>
-        /// <param name="Local_Web_Proxy"></param>
-        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_Proxy_Url, string Provided_File_Name, RequestCachePolicy? Local_Cache_Policy, IWebProxy? Local_Web_Proxy)
+        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_File_Name)
         {
             try
             {
-                Start_Time = DateTime.Now;
-                Download_System = Download_Client.Create(Web_Address, Location_Folder.Replace("file:///", string.Empty).Replace("file://", string.Empty), Provided_Arhive_File, Provided_File_Size, Provided_Proxy_Url, Provided_File_Name, Local_Cache_Policy, Local_Web_Proxy);
-
-                if (!File.Exists(Download_System.FullPath))
+#pragma warning disable CS8604 // Will not be null when 'Provided_Arhive_File' is string.Empty or Null, it will default to the Location Folder
+#pragma warning disable CS8601
+                Folder_Path = File.Exists(Provided_Arhive_File) ? Path.GetDirectoryName(Provided_Arhive_File) : Path.Combine(Location_Folder, ".Launcher", "Downloads");
+#pragma warning restore CS8601 //.NET 6
+                File_Name = !string.IsNullOrWhiteSpace(Provided_File_Name) ? Provided_File_Name : Path.GetFileName(Web_Address);
+                File_Path = File.Exists(Provided_Arhive_File) ? Provided_Arhive_File : Path.Combine(Folder_Path, File_Name);
+                if(Provided_File_Size > 0)
                 {
-                    if (!Directory.Exists(Download_System.FolderName))
-                    {
-                        Directory.CreateDirectory(Download_System.FolderName);
-                    }
+                    Web_File_Size = Provided_File_Size;
+                }
+#pragma warning restore CS8604 //.NET 6
 
-                    File.Create(Download_System.FullPath).Close();
+                /* Game Folder */
+                if (!Directory.Exists(Location_Folder))
+                {
+                    Directory.CreateDirectory(Location_Folder);
+                }
+                /* Game Pack Cache Folder */
+                if (!Directory.Exists(Folder_Path))
+                {
+                    Directory.CreateDirectory(Folder_Path);
+                }
+                /* Game Pack File */
+                if (!File.Exists(File_Path))
+                {
+                    File.Create(File_Path).Close();
+                }
+                else
+                {
+                    File_Size = new FileInfo(File_Path).Length;
+
+                    if (File_Size > Web_File_Size)
+                    {
+                        File.Delete(File_Path);
+                        File_Size = 0;
+                    }
+                }
+                /* Set Time when we Started Request */
+                if(Start_Time == default)
+                {
+                    Start_Time = DateTime.Now;
                 }
 
-                byte[] buffer = new byte[Download_Block_Size];
-                long totalDownloaded = Download_System.StartPoint;
-                int readCount;
+                /* Create a new HttpWebRequest instance. */
+                HttpWebRequest Live_Request = (HttpWebRequest)WebRequest.Create(Web_Address);
+                Live_Request.Headers["X-UserAgent"] = Download_Settings.Header;
+                Live_Request.AddRange(File_Size, Web_File_Size);
 
-                using (Stream Live_Stream = Download_System.DownloadStream)
+                /* Read the file in chunks of 'Download_Block_Size' */
+                byte[] Live_Buffer = new byte[Download_Block_Size];
+                int Bytes_Read;
+
+                /* Send the request and get the response. */
+                using (WebResponse Live_Response = Live_Request.GetResponse())
                 {
-                    using (BinaryReader Live_Reader = new BinaryReader(Live_Stream)) 
+                    /* Get the stream containing the response. */
+                    using (Stream Live_Stream = Live_Response.GetResponseStream())
                     {
-                        using (FileStream Live_Writer = new FileStream(Download_System.FullPath, FileMode.Append, FileAccess.Write))
+                        /* Use a BinaryReader to read the file in small chunks. */
+                        using (BinaryReader Live_Reader = new BinaryReader(Live_Stream))
                         {
-                            while ((readCount = Live_Reader.Read(buffer, 0, Download_Block_Size)) > 0)
+                            /* Use a FileStream to write the file to the local file system. */
+                            using (FileStream Live_Writer = new FileStream(File_Path, FileMode.Append))
                             {
-                                if (Cancel)
+                                while ((Bytes_Read = Live_Reader.Read(Live_Buffer, 0, Live_Buffer.Length)) > 0)
                                 {
-                                    Download_System.Close();
-                                    break;
+                                    if (Cancel)
+                                    {
+                                        break;
+                                    }
+
+                                    Live_Writer.Write(Live_Buffer, 0, Bytes_Read);
+
+                                    if ((this.Live_Progress != null) && !Cancel)
+                                    {
+                                        this.Live_Progress(this, new Download_Data_Progress_EventArgs(Live_Response.ContentLength, Bytes_Read + Live_Writer.Length, Start_Time));
+                                    }
+
+                                    if (Cancel)
+                                    {
+                                        break;
+                                    }
                                 }
 
-                                totalDownloaded += readCount;
-
-                                Live_Writer.Write(buffer, 0, readCount);
-
-                                if (Download_System.IsProgressKnown && (this.Live_Progress != null))
+                                if ((this.Complete != null) && !Cancel)
                                 {
-                                    this.Live_Progress(this, new Download_Data_Progress_EventArgs(Download_System.FileSize, totalDownloaded, Start_Time));
+                                    this.Complete(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
                                 }
-
-                                if (Cancel)
-                                {
-                                    Download_System.Close();
-                                    break;
-                                }
-                            }
-
-                            if (this.Complete != null && !Cancel)
-                            {
-                                this.Complete(this, new Download_Data_Complete_EventArgs(true, Download_System.FullPath, DateTime.Now));
                             }
                         }
                     }
@@ -265,13 +273,6 @@ namespace SBRW.Launcher.Core.Downloader
             catch (Exception Error)
             {
                 Exception_Router(true, Error);
-            }
-            finally
-            {
-                if (Download_System != null)
-                {
-                    Download_System.Close();
-                }
             }
         }
         /// <summary>
