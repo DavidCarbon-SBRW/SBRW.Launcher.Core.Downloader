@@ -230,25 +230,31 @@ namespace SBRW.Launcher.Core.Downloader
                         using (BinaryReader Live_Reader = new BinaryReader(Live_Stream))
                         {
                             /* Use a FileStream to write the file to the local file system. */
-                            using (FileStream Live_Writer = new FileStream(File_Path, FileMode.Append))
+                            using (FileStream Live_Writer = new FileStream(File_Path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
                             {
                                 while ((Bytes_Read = Live_Reader.Read(Live_Buffer, 0, Live_Buffer.Length)) > 0)
                                 {
                                     if (Cancel)
                                     {
+                                        Live_Writer.Flush();
+                                        Live_Writer.Close();
                                         break;
                                     }
-
-                                    Live_Writer.Write(Live_Buffer, 0, Bytes_Read);
-
-                                    if ((this.Live_Progress != null) && !Cancel)
+                                    else
                                     {
-                                        this.Live_Progress(this, new Download_Data_Progress_EventArgs(Live_Response.ContentLength, Bytes_Read + Live_Writer.Length, Start_Time));
-                                    }
+                                        Live_Writer.Write(Live_Buffer, 0, Bytes_Read);
 
-                                    if (Cancel)
-                                    {
-                                        break;
+                                        if ((this.Live_Progress != null) && !Cancel)
+                                        {
+                                            this.Live_Progress(this, new Download_Data_Progress_EventArgs(Live_Response.ContentLength, Bytes_Read + Live_Writer.Length, Start_Time));
+                                        }
+
+                                        if (Cancel)
+                                        {
+                                            Live_Writer.Flush();
+                                            Live_Writer.Close();
+                                            break;
+                                        }
                                     }
                                 }
 
