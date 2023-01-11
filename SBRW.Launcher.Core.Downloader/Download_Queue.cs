@@ -84,7 +84,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         /// <param name="Event_Hook"></param>
         /// <param name="Exception_Caught"></param>
-        internal void eException_Router(bool Event_Hook, Exception Exception_Caught)
+        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught)
         {
             Exception_Router(Event_Hook, Exception_Caught, false);
         }
@@ -166,8 +166,10 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Provided_File_Name"></param>
         public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_File_Name)
         {
+#if !DEBUG
             try
             {
+#endif
 #pragma warning disable CS8604 // Will not be null when 'Provided_Arhive_File' is string.Empty or Null, it will default to the Location Folder
 #pragma warning disable CS8601
                 Folder_Path = File.Exists(Provided_Arhive_File) ? Path.GetDirectoryName(Provided_Arhive_File) : Path.Combine(Location_Folder, ".Launcher", "Downloads");
@@ -213,8 +215,9 @@ namespace SBRW.Launcher.Core.Downloader
 
                 /* Create a new HttpWebRequest instance. */
                 HttpWebRequest Live_Request = (HttpWebRequest)WebRequest.Create(Web_Address);
+                Live_Request.UserAgent = Download_Settings.Header;
                 Live_Request.Headers["X-UserAgent"] = Download_Settings.Header;
-                Live_Request.AddRange(File_Size, Web_File_Size);
+                Live_Request.AddRange(File_Size);
 
                 /* Read the file in chunks of 'Download_Block_Size' */
                 byte[] Live_Buffer = new byte[Download_Block_Size];
@@ -266,6 +269,7 @@ namespace SBRW.Launcher.Core.Downloader
                         }
                     }
                 }
+#if !DEBUG
             }
             catch(WebException Error_Caught)
             {
@@ -280,6 +284,7 @@ namespace SBRW.Launcher.Core.Downloader
             {
                 Exception_Router(true, Error);
             }
+#endif
         }
         /// <summary>
         /// Download a file from a list or URLs. If downloading from one of the URLs fails,

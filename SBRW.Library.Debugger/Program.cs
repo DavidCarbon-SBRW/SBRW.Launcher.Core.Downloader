@@ -44,55 +44,31 @@ namespace SBRW.Library.Debugger
             {
                 Console.WriteLine("Downloading: Core Game Files Package".ToUpper());
 
-                // Get the size of the local file.
-                long localFileSize = 0;
-                if (File.Exists(GameFolderPath))
+                Pack_SBRW_Downloader = new Download_Queue()
                 {
-                    FileInfo info = new FileInfo(GameFolderPath);
-                    localFileSize = info.Length;
-                }
-
-                // Create a new HttpWebRequest instance.
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Launcher_CDN + "/GameFiles.sbrwpack");
-
-                // Set the start point for the download.
-                request.AddRange(localFileSize);
-
-                // Read the file in chunks of 1KB.
-                int chunkSize = 1024;
-                byte[] buffer = new byte[chunkSize];
-                int bytesRead;
-
-                // Send the request and get the response.
-                using (WebResponse response = request.GetResponse())
+                    Web_URL = Launcher_CDN + "/GameFiles.sbrwpack",
+                    Folder_Path = GameFolderPath,
+                    Web_File_Size = 3862102244,
+                    File_Name = "GameFiles.sbrwpack"
+                };
+                /* @DavidCarbon or @Zacam (Translation Strings Required) */
+                Pack_SBRW_Downloader.Live_Progress += (x, D_Live_Events) =>
                 {
-                    // Get the stream containing the response.
-                    using (Stream stream = response.GetResponseStream())
+                    if (!Pack_SBRW_Downloader.Cancel)
                     {
-                        // Use a BinaryReader to read the file in small chunks.
-                        using (BinaryReader reader = new BinaryReader(stream))
-                        {
-                            // Use a FileStream to write the file to the local file system.
-                            using (FileStream writer = new FileStream(GamePackPath, FileMode.Append))
-                            {
-                                
-                                while ((bytesRead = reader.Read(buffer, 0, buffer.Length)) > 0)
-                                {
-                                    // Write the chunk to the local file.
-                                    writer.Write(buffer, 0, bytesRead);
-
-                                    // Calculate the download progress.
-                                    double progress = (localFileSize + writer.Length) / (double)response.ContentLength;
-
-                                    // Show the percentage downloaded.
-                                    Console.WriteLine("Current Size:" + localFileSize + writer.Length + " (" + (int)(progress * 100) + " %)");
-                                }
-                            }
-                        }
+                        Console.WriteLine((D_Live_Events.File_Size_Current.FormatFileSize(true) + " of " + D_Live_Events.File_Size_Total.FormatFileSize(true) +
+                                            " (" + D_Live_Events.Download_Percentage + "%) ").ToUpper());
                     }
-                }
-
-                Console.WriteLine("Downloaded: SBRW Game Files Package".ToUpper());
+                };
+                Pack_SBRW_Downloader.Complete += (x, D_Live_Events) =>
+                {
+                    if (D_Live_Events.Complete && x != null)
+                    {
+                        Console.WriteLine("Downloaded: SBRW Game Files Package".ToUpper());
+                    }
+                };
+                /* Main Note: Current Revision File Size (in long) is: 3862102244 */
+                Pack_SBRW_Downloader.Download();
             }
         }
     }
