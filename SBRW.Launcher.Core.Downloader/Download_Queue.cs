@@ -52,6 +52,10 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
+        public long Web_File_Size_Remaining { get; internal set; } = 0;
+        /// <summary>
+        /// 
+        /// </summary>
         /// <param name="Sender"></param>
         /// <param name="Events"></param>
         public delegate void Download_Data_Progress_Handler(object Sender, Download_Data_Progress_EventArgs Events);
@@ -166,10 +170,12 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Provided_File_Name"></param>
         public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_File_Name)
         {
-#if !DEBUG
+            HttpWebRequest Live_Request;
+            HttpWebResponse Live_Response;
+            FileStream? Live_Writer = default;
+
             try
             {
-#endif
 #pragma warning disable CS8604 // Will not be null when 'Provided_Arhive_File' is string.Empty or Null, it will default to the Location Folder
 #pragma warning disable CS8601
                 Folder_Path = File.Exists(Provided_Arhive_File) ? Path.GetDirectoryName(Provided_Arhive_File) : Path.Combine(Location_Folder, ".Launcher", "Downloads");
@@ -205,73 +211,83 @@ namespace SBRW.Launcher.Core.Downloader
                     {
                         File.Delete(File_Path);
                         File_Size = 0;
+                        File.Create(File_Path).Close();
                     }
                 }
-                /* Set Time when we Started Request */
-                if(Start_Time == default)
+
+                if(File_Size == Web_File_Size)
                 {
-                    Start_Time = DateTime.Now;
+                    if ((this.Complete != null) && !Cancel)
+                    {
+                        this.Complete(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
+                    }
                 }
-
-                /* Create a new HttpWebRequest instance. */
-                HttpWebRequest Live_Request = (HttpWebRequest)WebRequest.Create(Web_Address);
-                Live_Request.UserAgent = Download_Settings.Header;
-                Live_Request.Headers["X-UserAgent"] = Download_Settings.Header;
-                Live_Request.AddRange(File_Size);
-
-                /* Read the file in chunks of 'Download_Block_Size' */
-                byte[] Live_Buffer = new byte[Download_Block_Size];
-                int Bytes_Read;
-
-                /* Send the request and get the response. */
-                using (WebResponse Live_Response = Live_Request.GetResponse())
+                else
                 {
+                    /* Set Time when we Started Request */
+                    if (Start_Time == default)
+                    {
+                        Start_Time = DateTime.Now;
+                    }
+
+                    /* Create a new HttpWebRequest instance. */
+                    Live_Request = (HttpWebRequest)WebRequest.Create(Web_Address);
+                    Live_Request.UserAgent = Download_Settings.Header;
+                    Live_Request.Headers["X-UserAgent"] = Download_Settings.Header;
+
+                    if (File_Size > 0)
+                    {
+                        Live_Request.AddRange(File_Size);
+                    }
+
+                    /* Read the file in chunks of 'Download_Block_Size' */
+                    byte[] Live_Buffer = new byte[Download_Block_Size];
+                    int Bytes_Read;
+                    long Current_Bytes_Read = File_Size;
+
+                    /* Send the request and get the response. */
+                    Live_Response = (HttpWebResponse)Live_Request.GetResponse();
+
                     /* Get the stream containing the response. */
                     using (Stream Live_Stream = Live_Response.GetResponseStream())
                     {
-                        /* Use a BinaryReader to read the file in small chunks. */
-                        using (BinaryReader Live_Reader = new BinaryReader(Live_Stream))
+                        /* Use a FileStream to write the file to the local file system. */
+                        Live_Writer = new FileStream(File_Path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                        Web_File_Size_Remaining = Live_Response.ContentLength;
+
+                        while ((Bytes_Read = Live_Stream.Read(Live_Buffer, 0, Download_Block_Size)) > 0)
                         {
-                            /* Use a FileStream to write the file to the local file system. */
-                            using (FileStream Live_Writer = new FileStream(File_Path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                            if (Cancel)
                             {
-                                while ((Bytes_Read = Live_Reader.Read(Live_Buffer, 0, Live_Buffer.Length)) > 0)
+                                break;
+                            }
+                            else
+                            {
+                                Live_Writer.Write(Live_Buffer, 0, Bytes_Read);
+                                Current_Bytes_Read += Bytes_Read;
+
+                                if ((this.Live_Progress != null) && !Cancel)
                                 {
-                                    if (Cancel)
-                                    {
-                                        Live_Writer.Flush();
-                                        Live_Writer.Close();
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        Live_Writer.Write(Live_Buffer, 0, Bytes_Read);
-
-                                        if ((this.Live_Progress != null) && !Cancel)
-                                        {
-                                            this.Live_Progress(this, new Download_Data_Progress_EventArgs(Live_Response.ContentLength, Bytes_Read + Live_Writer.Length, Start_Time));
-                                        }
-
-                                        if (Cancel)
-                                        {
-                                            Live_Writer.Flush();
-                                            Live_Writer.Close();
-                                            break;
-                                        }
-                                    }
+                                    this.Live_Progress(this, 
+                                        new Download_Data_Progress_EventArgs(Web_File_Size, Current_Bytes_Read, Web_File_Size_Remaining, Start_Time));
                                 }
 
-                                if ((this.Complete != null) && !Cancel)
+                                if (Cancel)
                                 {
-                                    this.Complete(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
+                                    break;
                                 }
                             }
                         }
+
+                        if ((this.Complete != null) && !Cancel)
+                        {
+                            this.Complete(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
+                        }
                     }
                 }
-#if !DEBUG
             }
-            catch(WebException Error_Caught)
+#if !DEBUG
+            catch (WebException Error_Caught)
             {
                 Exception_Router(true, Error_Caught, true);
             }
@@ -285,6 +301,14 @@ namespace SBRW.Launcher.Core.Downloader
                 Exception_Router(true, Error);
             }
 #endif
+            finally
+            {
+                if (Live_Writer != null)
+                {
+                    Live_Writer.Flush();
+                    Live_Writer.Close();
+                }
+            }
         }
         /// <summary>
         /// Download a file from a list or URLs. If downloading from one of the URLs fails,

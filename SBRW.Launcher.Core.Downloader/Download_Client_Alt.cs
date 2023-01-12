@@ -256,7 +256,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                                     if ((this.Live_Progress != null) && !Cancel)
                                     {
-                                        this.Live_Progress(this, new Download_Data_Progress_EventArgs(Live_Response.ContentLength, File_Arhive_Size + Live_Writer.Length, Start_Time));
+                                        this.Live_Progress(this, new Download_Data_Progress_EventArgs(Live_Response.ContentLength, File_Arhive_Size + Live_Writer.Length, 0, Start_Time));
                                     }
 
                                     if (Cancel)

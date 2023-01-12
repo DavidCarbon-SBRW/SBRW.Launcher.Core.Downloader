@@ -49,14 +49,15 @@ namespace SBRW.Library.Debugger
                     Web_URL = Launcher_CDN + "/GameFiles.sbrwpack",
                     Folder_Path = GameFolderPath,
                     Web_File_Size = 3862102244,
-                    File_Name = "GameFiles.sbrwpack"
+                    File_Name = "GameFiles.sbrwpack",
+                    Download_Block_Size = 10 * 1024 * 1024
                 };
                 /* @DavidCarbon or @Zacam (Translation Strings Required) */
                 Pack_SBRW_Downloader.Live_Progress += (x, D_Live_Events) =>
                 {
                     if (!Pack_SBRW_Downloader.Cancel)
                     {
-                        Console.WriteLine((D_Live_Events.File_Size_Current.FormatFileSize(true) + " of " + D_Live_Events.File_Size_Total.FormatFileSize(true) +
+                        Console.WriteLine(("Remaining: " + D_Live_Events.File_Size_Remaining.FormatFileSize(true) + " Current: " + D_Live_Events.File_Size_Current.FormatFileSize(true) + " of " + D_Live_Events.File_Size_Total.FormatFileSize(true) +
                                             " (" + D_Live_Events.Download_Percentage + "%) ").ToUpper());
                     }
                 };
