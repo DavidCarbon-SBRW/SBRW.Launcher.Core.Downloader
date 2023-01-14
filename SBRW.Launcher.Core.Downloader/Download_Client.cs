@@ -1,5 +1,6 @@
 ﻿using SBRW.Launcher.Core.Downloader.EventArg_;
 using SBRW.Launcher.Core.Downloader.Exception_;
+using SBRW.Launcher.Core.Downloader.Extension_;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,6 +22,10 @@ namespace SBRW.Launcher.Core.Downloader
         /// 
         /// </summary>
         public bool Cancel { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string File_Hash { get; set; } = "88C886B6D131C052365C3D6D14E14F67A4E2C253";
         /// <summary>
         /// 
         /// </summary>
@@ -227,9 +232,30 @@ namespace SBRW.Launcher.Core.Downloader
 
                 if (File_Size == Web_File_Size)
                 {
-                    if ((this.Complete != null) && !Cancel)
+                    if ((this.Live_Progress != null) && !Cancel)
                     {
-                        this.Complete(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
+                        this.Live_Progress(this,
+                            new Download_Data_Progress_EventArgs(Web_File_Size, File_Size, Web_File_Size_Remaining, Start_Time));
+                    }
+
+                    string Caluated_Local_File_Hash = Hashes.Hash_SHA(File_Path);
+
+                    if (Caluated_Local_File_Hash == File_Hash)
+                    {
+                        if ((this.Complete != null) && !Cancel)
+                        {
+                            this.Complete(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
+                        }
+                        else
+                        {
+                            Cancel = true;
+                        }
+                    }
+                    else
+                    {
+                        throw new Downloaded_File_Hash_Invalid_Exception("Local File does not match Provided Hash. " +
+                            "Excepted: " + File_Hash + " File: " + 
+                            (string.IsNullOrWhiteSpace(Caluated_Local_File_Hash) ? "Null String" : Caluated_Local_File_Hash));
                     }
                 }
                 else
@@ -311,13 +337,39 @@ namespace SBRW.Launcher.Core.Downloader
 
                             if ((this.Complete != null) && !Cancel)
                             {
-                                this.Complete(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
+                                string Caluated_Local_File_Hash = Hashes.Hash_SHA(File_Path);
+
+                                if (Caluated_Local_File_Hash == File_Hash)
+                                {
+                                    if ((this.Complete != null) && !Cancel)
+                                    {
+                                        this.Complete(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
+                                    }
+                                    else
+                                    {
+                                        Cancel = true;
+                                    }
+                                }
+                                else
+                                {
+                                    throw new Downloaded_File_Hash_Invalid_Exception("Local File does not match Provided Hash. " +
+                                        "Excepted: " + File_Hash + " File: " +
+                                        (string.IsNullOrWhiteSpace(Caluated_Local_File_Hash) ? "Null String" : Caluated_Local_File_Hash));
+                                }
 
                                 if (Live_Response != null)
                                 {
                                     Live_Response.Close();
                                     Live_Response.Dispose();
                                     Live_Response = null;
+                                }
+
+                                if (Live_Writer != null)
+                                {
+                                    Live_Writer.Flush();
+                                    Live_Writer.Close();
+                                    Live_Writer.Dispose();
+                                    Live_Writer = null;
                                 }
                             }
                             else if ((Live_Response != null) && Cancel)
@@ -351,6 +403,8 @@ namespace SBRW.Launcher.Core.Downloader
                 {
                     Live_Writer.Flush();
                     Live_Writer.Close();
+                    Live_Writer.Dispose();
+                    Live_Writer = null;
                 }
             }
         }
@@ -371,11 +425,11 @@ namespace SBRW.Launcher.Core.Downloader
             // validate input
             if (Web_Address_List == null)
             {
-                //Exception_Router(true, new ArgumentNullException("Web_Address_List"));
+                Exception_Router(true, new ArgumentNullException("Web_Address_List"));
             }
             else if (Web_Address_List.Count == 0)
             {
-                //Exception_Router(true, new ArgumentException("EMPTY Web_Address_List"));
+                Exception_Router(true, new ArgumentException("EMPTY Web_Address_List"));
             }
             else
             {
@@ -403,7 +457,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                 if (Web_Address_Exception != null)
                 {
-                    //Exception_Router(true, Web_Address_Exception);
+                    Exception_Router(true, Web_Address_Exception);
                 }
             }
         }
