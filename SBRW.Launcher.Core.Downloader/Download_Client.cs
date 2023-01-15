@@ -43,6 +43,10 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         public string File_Path { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Game Files", ".Launcher", "Downloads", "GameFiles.sbrwpack");
         /// <summary>
+        /// Removes invalid File if File Hash does not Match
+        /// </summary>
+        public bool File_Removal { get; set; } = false;
+        /// <summary>
         /// 
         /// </summary>
         public DateTime Start_Time { get; set; }
@@ -227,6 +231,15 @@ namespace SBRW.Launcher.Core.Downloader
                         File.Delete(File_Path);
                         File_Size = 0;
                         File.Create(File_Path).Close();
+                    }
+                    else if (File_Size == Web_File_Size && File_Removal)
+                    {
+                        if(Hashes.Hash_SHA(File_Path) != File_Hash)
+                        {
+                            File.Delete(File_Path);
+                            File_Size = 0;
+                            File.Create(File_Path).Close();
+                        }
                     }
                 }
 
