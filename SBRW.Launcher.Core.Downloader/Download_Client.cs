@@ -350,6 +350,21 @@ namespace SBRW.Launcher.Core.Downloader
 
                             if ((this.Complete != null) && !Cancel)
                             {
+                                if (Live_Response != null)
+                                {
+                                    Live_Response.Close();
+                                    Live_Response.Dispose();
+                                    Live_Response = null;
+                                }
+
+                                if (Live_Writer != null)
+                                {
+                                    Live_Writer.Flush();
+                                    Live_Writer.Close();
+                                    Live_Writer.Dispose();
+                                    Live_Writer = null;
+                                }
+
                                 string Caluated_Local_File_Hash = Hashes.Hash_SHA(File_Path);
 
                                 if (Caluated_Local_File_Hash == File_Hash)
@@ -368,21 +383,6 @@ namespace SBRW.Launcher.Core.Downloader
                                     throw new Downloaded_File_Hash_Invalid_Exception("Local File does not match Provided Hash. " +
                                         "Excepted: " + File_Hash + " File: " +
                                         (string.IsNullOrWhiteSpace(Caluated_Local_File_Hash) ? "Null String" : Caluated_Local_File_Hash));
-                                }
-
-                                if (Live_Response != null)
-                                {
-                                    Live_Response.Close();
-                                    Live_Response.Dispose();
-                                    Live_Response = null;
-                                }
-
-                                if (Live_Writer != null)
-                                {
-                                    Live_Writer.Flush();
-                                    Live_Writer.Close();
-                                    Live_Writer.Dispose();
-                                    Live_Writer = null;
                                 }
                             }
                             else if ((Live_Response != null) && Cancel)
