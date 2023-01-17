@@ -21,19 +21,35 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public bool Cancel { get; set; }
+        public Download_Information? Download_Status_Information { get; internal set; }
         /// <summary>
         /// 
+        /// </summary>
+        public Download_Information? Download_Status() { return Download_Status_Information; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool Disable_Download_Status_Information { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool Cancel { get; set; }
+        /// <summary>
+        /// File Hash Comparison
         /// </summary>
         public string File_Hash { get; set; } = "88C886B6D131C052365C3D6D14E14F67A4E2C253";
         /// <summary>
-        /// 
+        /// File Name to be Set Locally
         /// </summary>
         public string File_Name { get; set; } = "GameFiles.sbrwpack";
         /// <summary>
-        /// 
+        /// File Size on Local Disk
         /// </summary>
         public long File_Size { get; set; } = 0;
+        /// <summary>
+        /// File Size that is being updated by Downloader
+        /// </summary>
+        public long File_Size_Live { get; internal set; } = 0;
         /// <summary>
         /// 
         /// </summary>
@@ -55,7 +71,7 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         public string Web_URL { get; set; } = "http://localhost";
         /// <summary>
-        /// 
+        /// Expected File Size on the Web Server
         /// </summary>
         public long Web_File_Size { get; set; } = 3862102244;
         /// <summary>
@@ -195,17 +211,17 @@ namespace SBRW.Launcher.Core.Downloader
 
             try
             {
+#if !NETFRAMEWORK
 #pragma warning disable CS8604 // Will not be null when 'Provided_Arhive_File' is string.Empty or Null, it will default to the Location Folder
-#pragma warning disable CS8601
+#pragma warning disable CS8601 //.NET 6
+#endif
                 Folder_Path = File.Exists(Provided_Arhive_File) ? Path.GetDirectoryName(Provided_Arhive_File) : Path.Combine(Location_Folder, ".Launcher", "Downloads");
-#pragma warning restore CS8601 //.NET 6
                 File_Name = !string.IsNullOrWhiteSpace(Provided_File_Name) ? Provided_File_Name : Path.GetFileName(Web_Address);
                 File_Path = File.Exists(Provided_Arhive_File) ? Provided_Arhive_File : Path.Combine(Folder_Path, File_Name);
                 if (Provided_File_Size > 0)
                 {
                     Web_File_Size = Provided_File_Size;
                 }
-#pragma warning restore CS8604 //.NET 6
 
                 /* Game Folder */
                 if (!Directory.Exists(Location_Folder))
@@ -216,6 +232,10 @@ namespace SBRW.Launcher.Core.Downloader
                 if (!Directory.Exists(Folder_Path))
                 {
                     Directory.CreateDirectory(Folder_Path);
+#if !NETFRAMEWORK
+#pragma warning restore CS8604 // Possible null reference argument.
+#pragma warning restore CS8601 //.NET 6
+#endif
                 }
                 /* Game Pack File */
                 if (!File.Exists(File_Path))
@@ -280,7 +300,13 @@ namespace SBRW.Launcher.Core.Downloader
                     }
 
                     /* Create a new HttpWebRequest instance. */
+#if !NETFRAMEWORK
+#pragma warning disable SYSLIB0014 // Type or member is obsolete
+#endif
                     Live_Request = (HttpWebRequest)WebRequest.Create(Web_Address);
+#if !NETFRAMEWORK
+#pragma warning restore SYSLIB0014 // Type or member is obsolete
+#endif
                     Live_Request.UserAgent = Download_Settings.Header;
                     Live_Request.Headers["X-UserAgent"] = Download_Settings.Header;
 
@@ -292,7 +318,7 @@ namespace SBRW.Launcher.Core.Downloader
                     /* Read the file in chunks of 'Download_Block_Size' */
                     byte[] Live_Buffer = new byte[Download_Block_Size];
                     int Bytes_Read;
-                    long Current_Bytes_Read = File_Size;
+                    File_Size_Live = File_Size;
 
                     /* Send the request and get the response. */
                     Live_Response = (HttpWebResponse)Live_Request.GetResponse();
@@ -333,12 +359,24 @@ namespace SBRW.Launcher.Core.Downloader
                                 else
                                 {
                                     Live_Writer.Write(Live_Buffer, 0, Bytes_Read);
-                                    Current_Bytes_Read += Bytes_Read;
+                                    File_Size_Live += Bytes_Read;
 
                                     if ((this.Live_Progress != null) && !Cancel)
                                     {
                                         this.Live_Progress(this,
-                                            new Download_Data_Progress_EventArgs(Web_File_Size, Current_Bytes_Read, Web_File_Size_Remaining, Start_Time));
+                                            new Download_Data_Progress_EventArgs(Web_File_Size, File_Size_Live, Web_File_Size_Remaining, Start_Time));
+                                    }
+                                    
+                                    if (!Disable_Download_Status_Information && !Cancel)
+                                    {
+                                        Download_Status_Information = new Download_Information()
+                                        {
+                                            File_Size_Total = Web_File_Size,
+                                            File_Size_Current = File_Size_Live,
+                                            File_Size_Remaining = Web_File_Size_Remaining,
+                                            Download_Percentage = (int)((((double)File_Size_Live) / Web_File_Size) * 100),
+                                            Start_Time = Start_Time
+                                        };
                                     }
 
                                     if (Cancel)
@@ -346,6 +384,20 @@ namespace SBRW.Launcher.Core.Downloader
                                         break;
                                     }
                                 }
+                            }
+
+                            if (!Disable_Download_Status_Information && !Cancel)
+                            {
+                                Download_Status_Information = new Download_Information()
+                                {
+                                    File_Size_Total = Web_File_Size,
+                                    File_Size_Current = File_Size_Live,
+                                    File_Size_Remaining = Web_File_Size_Remaining,
+                                    Download_Percentage = (int)((((double)File_Size_Live) / Web_File_Size) * 100),
+                                    Start_Time = Start_Time,
+                                    End_Time = DateTime.Now,
+                                    Download_Complete = true
+                                };
                             }
 
                             if ((this.Complete != null) && !Cancel)
@@ -474,6 +526,9 @@ namespace SBRW.Launcher.Core.Downloader
                 }
             }
         }
+#if !NETFRAMEWORK
+#pragma warning disable CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
+#endif
         /// <summary>
         /// Asynchronously download a file from the url.
         /// </summary>
@@ -508,6 +563,9 @@ namespace SBRW.Launcher.Core.Downloader
             System.Threading.ThreadPool.QueueUserWorkItem(
                 new System.Threading.WaitCallback(this.WaitCallbackMethod), new object[] { Web_Address_List, string.Empty });
         }
+#if !NETFRAMEWORK
+#pragma warning restore CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
+#endif
         /// <summary>
         /// A WaitCallback used by the AsyncDownload methods.
         /// </summary>
