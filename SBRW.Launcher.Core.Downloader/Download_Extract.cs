@@ -24,6 +24,18 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
+        public Extract_Information? Extract_Status_Information { get; internal set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public Extract_Information? Extract_Status() { return Extract_Status_Information; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool Disable_Extract_Status_Information { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         private string Current_File { get; set; } = string.Empty;
         /// <summary>
         /// 
@@ -173,12 +185,17 @@ namespace SBRW.Launcher.Core.Downloader
                                         string IV = Regex.Replace(Hashes.Hash_String(0, File_Name_Last_Check), "[^0-9.]", string.Empty).Substring(0, 8);
 
                                         Package_File.ExtractToFile(File_Temporary_Location, true);
-
+#if !NETFRAMEWORK
+#pragma warning disable SYSLIB0021 // Type or member is obsolete
+#endif
                                         DESCryptoServiceProvider Crypto_Provider = new DESCryptoServiceProvider()
                                         {
                                             Key = Encoding.ASCII.GetBytes(KEY),
                                             IV = Encoding.ASCII.GetBytes(IV)
                                         };
+#if !NETFRAMEWORK
+#pragma warning restore SYSLIB0021 // Type or member is obsolete
+#endif
 
                                         FileStream File_Stream = new FileStream(Path.Combine(File_Extract_Path, File_Name_Decrypt), FileMode.Create);
                                         CryptoStream Decrypt_Stream = new CryptoStream(File_Stream, Crypto_Provider.CreateDecryptor(), CryptoStreamMode.Write);
@@ -214,14 +231,44 @@ namespace SBRW.Launcher.Core.Downloader
                                 break;
                             }
 
+                            if (!Disable_Extract_Status_Information && !Cancel)
+                            {
+                                Extract_Status_Information = new Extract_Information()
+                                {
+                                    Extract_Percentage = 100 * Total_Current_File / Total_File,
+                                    File_Current_Name = Current_File,
+                                    File_Total = Total_File,
+                                    File_Current = Total_Current_File,
+                                    Start_Time = Start_Time
+                                };
+                            }
+
                             if ((this.Live_Progress != null) && !Cancel)
                             {
                                 this.Live_Progress(this, new Download_Extract_Progress_EventArgs(100 * Total_Current_File / Total_File, Current_File, Total_File, Total_Current_File, Start_Time));
                             }
 
-                            if ((Total_Current_File == Total_File) && (this.Complete != null) && !Cancel)
+                            if ((Total_Current_File == Total_File) && !Cancel)
                             {
-                                this.Complete(this, new Download_Extract_Complete_EventArgs(true, DateTime.Now));
+                                if (!Disable_Extract_Status_Information && !Cancel)
+                                {
+                                    Extract_Status_Information = new Extract_Information()
+                                    {
+                                        Extract_Percentage = 100 * Total_Current_File / Total_File,
+                                        File_Current_Name = Current_File,
+                                        File_Total = Total_File,
+                                        File_Current = Total_Current_File,
+                                        Start_Time = Start_Time,
+                                        End_Time = DateTime.Now,
+                                        Extract_Complete = true
+                                    };
+                                }
+
+                                if (this.Complete != null)
+                                {
+                                    this.Complete(this, new Download_Extract_Complete_EventArgs(true, DateTime.Now));
+                                }
+                                
                                 Cancel = true;
                             }
                             else if (Cancel)

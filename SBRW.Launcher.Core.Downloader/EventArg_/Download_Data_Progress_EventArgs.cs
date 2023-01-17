@@ -14,10 +14,6 @@ namespace SBRW.Launcher.Core.Downloader.EventArg_
         /// <summary>
         /// 
         /// </summary>
-        public string? Download_State { get; internal set; }
-        /// <summary>
-        /// 
-        /// </summary>
         public long File_Size_Total { get; internal set; }
         /// <summary>
         /// 
