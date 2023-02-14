@@ -310,9 +310,9 @@ namespace SBRW.Launcher.Core.Downloader
                     Live_Request.UserAgent = Download_Settings.Header;
                     Live_Request.Headers["X-UserAgent"] = Download_Settings.Header;
 
-                    if (File_Size > 0)
+                    if (File_Size > 0 && Provided_File_Size > 0)
                     {
-                        Live_Request.AddRange(File_Size);
+                        Live_Request.AddRange(File_Size, Provided_File_Size);
                     }
 
                     /* Read the file in chunks of 'Download_Block_Size' */
@@ -343,6 +343,16 @@ namespace SBRW.Launcher.Core.Downloader
                     }
                     else
                     {
+                        if (Live_Response.StatusCode != HttpStatusCode.PartialContent)
+                        {
+                            if (File_Size != 0)
+                            {
+                                File.Delete(File_Path);
+                                File_Size = 0;
+                                File.Create(File_Path).Close();
+                            }
+                        }
+
                         /* Get the stream containing the response. */
                         using (Stream Live_Stream = Live_Response.GetResponseStream())
                         {
