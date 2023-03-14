@@ -5,14 +5,14 @@ namespace SBRW.Launcher.Core.Downloader.Exception_
     /// <summary>
     /// 
     /// </summary>
-    public class Downloaded_File_Hash_Invalid_Exception : Exception
+    public class Download_Client_Exception : Exception
     {
         /// <summary>
         /// 
         /// </summary>
         /// <param name="Error_Message"></param>
-        public Downloaded_File_Hash_Invalid_Exception(string Error_Message) : base(Error_Message)
-        { 
+        public Download_Client_Exception(string Error_Message) : base(Error_Message)
+        {
 
         }
         /// <summary>
@@ -20,7 +20,7 @@ namespace SBRW.Launcher.Core.Downloader.Exception_
         /// </summary>
         /// <param name="Error_Message"></param>
         /// <param name="Error"></param>
-        public Downloaded_File_Hash_Invalid_Exception(string Error_Message, Exception Error) : base(Error_Message, Error) 
+        public Download_Client_Exception(string Error_Message, Exception Error) : base(Error_Message, Error)
         {
 
         }

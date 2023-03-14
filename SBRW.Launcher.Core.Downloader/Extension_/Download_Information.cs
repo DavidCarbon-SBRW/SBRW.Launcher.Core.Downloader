@@ -37,5 +37,9 @@ namespace SBRW.Launcher.Core.Downloader.Extension_
         /// 
         /// </summary>
         public bool Download_Complete { get; internal set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public int Download_Attempts { get; internal set; }
     }
 }
