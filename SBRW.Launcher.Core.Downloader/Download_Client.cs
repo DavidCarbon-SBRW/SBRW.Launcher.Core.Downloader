@@ -206,6 +206,21 @@ namespace SBRW.Launcher.Core.Downloader
         /// <param name="Provided_File_Name"></param>
         public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_File_Name)
         {
+            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_File_Name, 0);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Web_Address"></param>
+        /// <param name="Location_Folder"></param>
+        /// <param name="Provided_Arhive_File"></param>
+        /// <param name="Provided_File_Size"></param>
+        /// <param name="Provided_File_Name"></param>
+        /// <param name="Error_Rate"></param>
+        /// <exception cref="Downloaded_File_Hash_Invalid_Exception"></exception>
+        /// <exception cref="Exception"></exception>
+        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_File_Name, int Error_Rate)
+        {
             HttpWebRequest Live_Request;
             FileStream? Live_Writer = default;
 
@@ -268,7 +283,7 @@ namespace SBRW.Launcher.Core.Downloader
                     if ((this.Live_Progress != null) && !Cancel)
                     {
                         this.Live_Progress(this,
-                            new Download_Data_Progress_EventArgs(Web_File_Size, File_Size, Web_File_Size_Remaining, Start_Time));
+                            new Download_Data_Progress_EventArgs(Web_File_Size, File_Size, Web_File_Size_Remaining, Start_Time, Error_Rate));
                     }
 
                     string Caluated_Local_File_Hash = Hashes.Hash_SHA(File_Path);
@@ -374,7 +389,7 @@ namespace SBRW.Launcher.Core.Downloader
                                     if ((this.Live_Progress != null) && !Cancel)
                                     {
                                         this.Live_Progress(this,
-                                            new Download_Data_Progress_EventArgs(Web_File_Size, File_Size_Live, Web_File_Size_Remaining, Start_Time));
+                                            new Download_Data_Progress_EventArgs(Web_File_Size, File_Size_Live, Web_File_Size_Remaining, Start_Time, Error_Rate));
                                     }
                                     
                                     if (!Disable_Download_Status_Information && !Cancel)
@@ -385,7 +400,8 @@ namespace SBRW.Launcher.Core.Downloader
                                             File_Size_Current = File_Size_Live,
                                             File_Size_Remaining = Web_File_Size_Remaining,
                                             Download_Percentage = (int)((((double)File_Size_Live) / Web_File_Size) * 100),
-                                            Start_Time = Start_Time
+                                            Start_Time = Start_Time,
+                                            Download_Attempts = Error_Rate
                                         };
                                     }
 
@@ -406,7 +422,8 @@ namespace SBRW.Launcher.Core.Downloader
                                     Download_Percentage = (int)((((double)File_Size_Live) / Web_File_Size) * 100),
                                     Start_Time = Start_Time,
                                     End_Time = DateTime.Now,
-                                    Download_Complete = true
+                                    Download_Complete = true,
+                                    Download_Attempts = Error_Rate
                                 };
                             }
 
@@ -440,11 +457,25 @@ namespace SBRW.Launcher.Core.Downloader
                                         Cancel = true;
                                     }
                                 }
-                                else
+                                /* If Current File Size is Smaller than the File on the Server OR 
+                                 * If Current File Size is Greator than on the Server AND
+                                 * If the Amount of Retrys is less than or equal to 10
+                                 * 
+                                 * Go ahead and try the download
+                                 */
+                                else if ((File_Size_Live < Web_File_Size) || (File_Size_Live > Web_File_Size) || Error_Rate <= 10)
+                                {
+                                    Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_File_Name, Error_Rate + 1);
+                                }
+                                else if (Error_Rate <= 10)
                                 {
                                     throw new Downloaded_File_Hash_Invalid_Exception("Local File does not match Provided Hash. " +
                                         "Excepted: " + File_Hash + " File: " +
                                         (string.IsNullOrWhiteSpace(Caluated_Local_File_Hash) ? "Null String" : Caluated_Local_File_Hash));
+                                }
+                                else
+                                {
+                                    throw new Download_Client_Exception("Download Client was being Interrupted. Please Manually Retry.");
                                 }
                             }
                             else if ((Live_Response != null) && Cancel)
