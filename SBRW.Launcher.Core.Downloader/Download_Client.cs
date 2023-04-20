@@ -27,6 +27,10 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         public Download_Information? Download_Status() { return Download_Status_Information; }
         /// <summary>
+        /// Downloader Download Attempts
+        /// </summary>
+        public int Download_Retry_Attempts { get; set; } = 10;
+        /// <summary>
         /// 
         /// </summary>
         public bool Disable_Download_Status_Information { get; set; }
@@ -459,15 +463,15 @@ namespace SBRW.Launcher.Core.Downloader
                                 }
                                 /* If Current File Size is Smaller than the File on the Server OR 
                                  * If Current File Size is Greator than on the Server AND
-                                 * If the Amount of Retrys is less than or equal to 10
+                                 * If the Amount of Retrys is less than or equal to 'Download_Retry_Attempts'
                                  * 
                                  * Go ahead and try the download
                                  */
-                                else if ((File_Size_Live < Web_File_Size) || (File_Size_Live > Web_File_Size) || Error_Rate <= 10)
+                                else if ((File_Size_Live < Web_File_Size) || (File_Size_Live > Web_File_Size) || (Error_Rate <= Download_Retry_Attempts))
                                 {
                                     Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_File_Name, Error_Rate + 1);
                                 }
-                                else if (Error_Rate <= 10)
+                                else if (Error_Rate <= Download_Retry_Attempts)
                                 {
                                     throw new Downloaded_File_Hash_Invalid_Exception("Local File does not match Provided Hash. " +
                                         "Excepted: " + File_Hash + " File: " +
