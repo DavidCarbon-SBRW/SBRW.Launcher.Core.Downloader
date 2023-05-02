@@ -8,7 +8,7 @@ namespace SBRW.Library.Debugger
 {
     internal class Program
     {
-        public static Download_Queue? Pack_SBRW_Downloader { get; set; }
+        public static Download_Client? Pack_SBRW_Downloader { get; set; }
         public static Download_Extract? Pack_SBRW_Unpacker { get; set; }
         private static int Pack_SBRW_Downloader_Time_Span { get; set; }
         public static bool Pack_SBRW_Downloader_Unpack_Lock { get; set; }
@@ -44,7 +44,7 @@ namespace SBRW.Library.Debugger
             {
                 Console.WriteLine("Downloading: Core Game Files Package".ToUpper());
 
-                Pack_SBRW_Downloader = new Download_Queue()
+                Pack_SBRW_Downloader = new Download_Client()
                 {
                     Web_URL = Launcher_CDN + "/GameFiles.sbrwpack",
                     Folder_Path = GameFolderPath,
