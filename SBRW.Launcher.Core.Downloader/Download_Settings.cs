@@ -21,7 +21,13 @@ namespace SBRW.Launcher.Core.Downloader
                     {
                         if (File.Exists("SBRW.Launcher.Core.Downloader.dll"))
                         {
-                            Version_Cache = FileVersionInfo.GetVersionInfo("SBRW.Launcher.Core.Downloader.dll").FileVersion??string.Empty;
+#if !NETFRAMEWORK
+#pragma warning disable CS8601 // Possible null reference assignment.
+#endif
+                            Version_Cache = FileVersionInfo.GetVersionInfo("SBRW.Launcher.Core.Downloader.dll").FileVersion;
+#if !NETFRAMEWORK
+#pragma warning restore CS8601 // Possible null reference assignment.
+#endif
                         }
                     }
                     catch

@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace SBRW.Launcher.Core.Downloader.Extension_
@@ -54,6 +55,36 @@ namespace SBRW.Launcher.Core.Downloader.Extension_
                 }
 
                 return Complied_Hash.ToString();
+            }
+        }
+        /// <summary>
+        /// File Hash in SHA-1
+        /// </summary>
+        /// <param name="File_Name">File Path in a String Format</param>
+        /// <returns>SHA-1 Hash String</returns>
+        public static string Hash_SHA(string File_Name)
+        {
+            if (!File.Exists(File_Name))
+            {
+                return string.Empty;
+            }
+            else
+            {
+                SHA1 sha1_Generator = SHA1.Create();
+                byte[] retrived_Value = new byte[] { };
+
+                using (var test = File.OpenRead(File_Name))
+                {
+                    retrived_Value = sha1_Generator.ComputeHash(test);
+                }
+
+                StringBuilder stringHashBuilder = new StringBuilder();
+                for (int i = 0; i < retrived_Value.Length; i++)
+                {
+                    stringHashBuilder.Append(retrived_Value[i].ToString("x2"));
+                }
+
+                return stringHashBuilder.ToString().ToUpperInvariant();
             }
         }
     }
