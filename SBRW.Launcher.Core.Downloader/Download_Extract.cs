@@ -207,8 +207,10 @@ namespace SBRW.Launcher.Core.Downloader
                                             Binary_File.Write(Binary_Reader.ReadBytes((int)numBytes));
                                         }
 
+                                        Binary_File.Flush();
                                         Binary_File.Close();
                                         Binary_File.Dispose();
+                                        Decrypt_Stream.Flush();
                                         Decrypt_Stream.Close();
                                         Decrypt_Stream.Dispose();
                                         File_Stream.Close();
