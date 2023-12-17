@@ -197,15 +197,19 @@ namespace SBRW.Launcher.Core.Downloader
 #endif
 
                                         using (FileStream File_Input = new FileStream(File_Temporary_Location, FileMode.Open, FileAccess.Read))
-                                        using (FileStream File_Output = new FileStream(Path.Combine(File_Extract_Path, File_Name_Decrypt), FileMode.Create, FileAccess.Write))
-                                        using (CryptoStream Decrypt_Stream = new CryptoStream(File_Input, Crypto_Provider.CreateDecryptor(), CryptoStreamMode.Write))
                                         {
-                                            // 8 KB buffer, may adjust this size based on current results
-                                            byte[] buffer = new byte[8192];
-                                            int bytesRead;
-                                            while ((bytesRead = File_Output.Read(buffer, 0, buffer.Length)) > 0)
+                                            using (FileStream File_Output = new FileStream(Path.Combine(File_Extract_Path, File_Name_Decrypt), FileMode.Create, FileAccess.Write))
                                             {
-                                                Decrypt_Stream.Write(buffer, 0, bytesRead);
+                                                using (CryptoStream Decrypt_Stream = new CryptoStream(File_Output, Crypto_Provider.CreateDecryptor(), CryptoStreamMode.Write))
+                                                {
+                                                    // 8 KB buffer, may adjust this size based on current results
+                                                    byte[] buffer = new byte[8192];
+                                                    int bytesRead;
+                                                    while ((bytesRead = File_Output.Read(buffer, 0, buffer.Length)) > 0)
+                                                    {
+                                                        Decrypt_Stream.Write(buffer, 0, bytesRead);
+                                                    }
+                                                }
                                             }
                                         }
 
