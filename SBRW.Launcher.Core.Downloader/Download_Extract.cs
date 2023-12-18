@@ -205,7 +205,7 @@ namespace SBRW.Launcher.Core.Downloader
                                                     // 8 KB buffer, may adjust this size based on current results
                                                     byte[] buffer = new byte[8192];
                                                     int bytesRead;
-                                                    while ((bytesRead = File_Output.Read(buffer, 0, buffer.Length)) > 0)
+                                                    while ((bytesRead = File_Input.Read(buffer, 0, buffer.Length)) > 0)
                                                     {
                                                         Decrypt_Stream.Write(buffer, 0, bytesRead);
                                                     }
