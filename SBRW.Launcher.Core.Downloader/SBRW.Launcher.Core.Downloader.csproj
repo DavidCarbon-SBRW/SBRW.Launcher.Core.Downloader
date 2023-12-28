@@ -1,37 +1,39 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net6.0;net461;net472</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net6.0;net461;net472;net46</TargetFrameworks>
     <Nullable>enable</Nullable>
-	<LangVersion>8.0</LangVersion>
-	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	  <Version>0.3.7</Version>
-	  <Authors>Soapbox Race World - Launcher Division</Authors>
-	  <Company>Soapbox Race World</Company>
-	  <Copyright>© Soapbox Race World</Copyright>
-	  <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-	  <NeutralLanguage>en</NeutralLanguage>
-	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
-	  <PackageIcon>Logo_512.png</PackageIcon>
-	  <PackageIconUrl />
-	  <RepositoryUrl>https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader</RepositoryUrl>
-	  <PackageProjectUrl>https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader</PackageProjectUrl>
-	  <Description>A Downloader Library built to Download Game Files</Description>
-	  <PackageTags>Game, Downloader, LZMA</PackageTags>
-	  <PackageReleaseNotes></PackageReleaseNotes>
-	  <RepositoryType>git</RepositoryType>
-	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
-	  <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-	  <!-- Required: Full Debugging -->
-	  <DebugType>full</DebugType>
-	  <DebugSymbols>true</DebugSymbols>
-	  <!-- Required: Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
-	  <PublishRepositoryUrl>true</PublishRepositoryUrl>
-	  <!-- Required: Build symbol package (.snupkg) to distribute the PDB containing Source Link -->
-	  <IncludeSymbols>true</IncludeSymbols>
-	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-	  <!-- Required: Include symbols files if Self-Hosted Nuget Feed does not support symbol packages -->
-	  <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <LangVersion>8.0</LangVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>0.3.8</Version>
+    <Authors>Soapbox Race World - Launcher Division</Authors>
+    <Company>Soapbox Race World</Company>
+    <Copyright>© Soapbox Race World</Copyright>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <NeutralLanguage>en</NeutralLanguage>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>Logo_512.png</PackageIcon>
+    <PackageIconUrl />
+    <RepositoryUrl>https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/DavidCarbon-SBRW/SBRW.Launcher.Core.Downloader</PackageProjectUrl>
+    <Description>A Downloader Library built to Download Game Files</Description>
+    <PackageTags>Game, Downloader, LZMA</PackageTags>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <RepositoryType>git</RepositoryType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <!-- Required: Full Debugging -->
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <!-- Required: Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <!-- Required: Build symbol package (.snupkg) to distribute the PDB containing Source Link -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- Required: Include symbols files if Self-Hosted Nuget Feed does not support symbol packages -->
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net46' ">NET46;NET460</DefineConstants>
   </PropertyGroup>
 
 	<ItemGroup>
@@ -41,7 +43,7 @@
 		</None>
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net472'">
+	<ItemGroup Condition="'$(TargetFramework)' == 'net46' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net472'">
 	  <PackageReference Include="System.IO.Compression" Version="4.3.0" />
 	</ItemGroup>
 

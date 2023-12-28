@@ -334,6 +334,8 @@ namespace SBRW.Launcher.Core.Downloader
                         Live_Request.AddRange(File_Size, Provided_File_Size);
                     }
 
+                    Live_Request.Timeout = Download_Settings.Launcher_WebCall_Timeout();
+
                     /* Read the file in chunks of 'Download_Block_Size' */
                     byte[] Live_Buffer = new byte[Download_Block_Size];
                     int Bytes_Read;
@@ -467,8 +469,9 @@ namespace SBRW.Launcher.Core.Downloader
                                  * 
                                  * Go ahead and try the download
                                  */
-                                else if ((File_Size_Live < Web_File_Size) || (File_Size_Live > Web_File_Size) || (Error_Rate <= Download_Retry_Attempts))
+                                else if (((File_Size_Live < Web_File_Size) || (File_Size_Live > Web_File_Size)) && (Error_Rate <= Download_Retry_Attempts))
                                 {
+                                    /* TODO: Check why this function causes issues for Unix Builds and for those who have a connection that can cause it to fail */
                                     Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_File_Name, Error_Rate + 1);
                                 }
                                 else if (Error_Rate <= Download_Retry_Attempts)

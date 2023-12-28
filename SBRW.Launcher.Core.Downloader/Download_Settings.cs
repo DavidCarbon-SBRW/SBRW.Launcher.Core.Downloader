@@ -53,7 +53,21 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public static bool Alternative_WebCalls { get; set; }
+        internal static bool Alternative_WebCalls_Cache { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public static bool Alternative_WebCalls() => Alternative_WebCalls_Cache;
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Provided_Bool"></param>
+        /// <returns></returns>
+        public static bool Alternative_WebCalls(bool Provided_Bool)
+        {
+            return Alternative_WebCalls_Cache = Provided_Bool;
+        }
         /// <summary>
         /// 
         /// </summary>

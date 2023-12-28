@@ -44,10 +44,6 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// 
         /// </summary>
-        public string File_Temporary_Location { get; set; } = Path.GetTempFileName();
-        /// <summary>
-        /// 
-        /// </summary>
         private int Total_Current_File { get; set; }
         /// <summary>
         /// 
@@ -117,9 +113,8 @@ namespace SBRW.Launcher.Core.Downloader
             else
             {
                 Start_Time = DateTime.Now;
-
 #pragma warning disable IDE0063 // Use simple 'using' statement
-                using (ZipArchive Package_Archive = ZipFile.OpenRead(File_Custom_Pack_Path))
+                using (ZipArchive Package_Archive = Assembly_Patches.OpenRead(File_Custom_Pack_Path))
                 {
                     Total_File = Package_Archive.Entries.Count;
 
@@ -168,6 +163,9 @@ namespace SBRW.Launcher.Core.Downloader
                                 {
                                     try
                                     {
+                                        string File_Temporary_Location = Path.GetTempFileName();
+                                        FileInfo File_Temporary_Location_With_Attributes = new FileInfo(File_Temporary_Location);
+                                        File_Temporary_Location_With_Attributes.Attributes = FileAttributes.Temporary;
                                         string File_Name_Decrypt = Current_File.Replace(File_Extension_Replacement, string.Empty);
                                         string[] File_Name_Split = File_Name_Decrypt.Split('/');
                                         string File_Name_Last_Check = string.Empty;
@@ -197,24 +195,29 @@ namespace SBRW.Launcher.Core.Downloader
 #pragma warning restore SYSLIB0021 // Type or member is obsolete
 #endif
 
-                                        FileStream File_Stream = new FileStream(Path.Combine(File_Extract_Path, File_Name_Decrypt), FileMode.Create);
-                                        CryptoStream Decrypt_Stream = new CryptoStream(File_Stream, Crypto_Provider.CreateDecryptor(), CryptoStreamMode.Write);
-                                        BinaryWriter Binary_File = new BinaryWriter(Decrypt_Stream);
-
-                                        using (BinaryReader Binary_Reader = new BinaryReader(File.Open(File_Temporary_Location, FileMode.Open)))
+                                        using (FileStream File_Input = new FileStream(File_Temporary_Location, FileMode.Open, FileAccess.Read))
                                         {
-                                            long numBytes = new FileInfo(File_Temporary_Location).Length;
-                                            Binary_File.Write(Binary_Reader.ReadBytes((int)numBytes));
+                                            using (FileStream File_Output = new FileStream(Path.Combine(File_Extract_Path, File_Name_Decrypt), FileMode.Create, FileAccess.Write))
+                                            {
+                                                using (CryptoStream Decrypt_Stream = new CryptoStream(File_Output, Crypto_Provider.CreateDecryptor(), CryptoStreamMode.Write))
+                                                {
+                                                    // 8 KB buffer, may adjust this size based on current results
+                                                    byte[] buffer = new byte[8192];
+                                                    int bytesRead;
+                                                    while ((bytesRead = File_Input.Read(buffer, 0, buffer.Length)) > 0)
+                                                    {
+                                                        Decrypt_Stream.Write(buffer, 0, bytesRead);
+                                                    }
+                                                }
+                                            }
                                         }
 
-                                        Binary_File.Close();
-                                        Binary_File.Dispose();
-                                        Decrypt_Stream.Close();
-                                        Decrypt_Stream.Dispose();
-                                        File_Stream.Close();
-                                        File_Stream.Dispose();
                                         Crypto_Provider.Clear();
-                                        Crypto_Provider.Dispose();
+
+                                        if (File.Exists(File_Temporary_Location))
+                                        {
+                                            File.Delete(File_Temporary_Location);
+                                        }
                                     }
                                     catch (Exception Error)
                                     {
@@ -268,7 +271,7 @@ namespace SBRW.Launcher.Core.Downloader
                                 {
                                     this.Complete(this, new Download_Extract_Complete_EventArgs(true, DateTime.Now));
                                 }
-                                
+
                                 Cancel = true;
                             }
                             else if (Cancel)
