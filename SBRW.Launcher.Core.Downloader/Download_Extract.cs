@@ -113,9 +113,8 @@ namespace SBRW.Launcher.Core.Downloader
             else
             {
                 Start_Time = DateTime.Now;
-
 #pragma warning disable IDE0063 // Use simple 'using' statement
-                using (ZipArchive Package_Archive = ZipFile.OpenRead(File_Custom_Pack_Path))
+                using (ZipArchive Package_Archive = Assembly_Patches.OpenRead(File_Custom_Pack_Path))
                 {
                     Total_File = Package_Archive.Entries.Count;
 
@@ -272,7 +271,7 @@ namespace SBRW.Launcher.Core.Downloader
                                 {
                                     this.Complete(this, new Download_Extract_Complete_EventArgs(true, DateTime.Now));
                                 }
-                                
+
                                 Cancel = true;
                             }
                             else if (Cancel)

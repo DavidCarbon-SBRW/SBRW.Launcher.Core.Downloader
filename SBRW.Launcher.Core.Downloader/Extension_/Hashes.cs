@@ -30,31 +30,21 @@ namespace SBRW.Launcher.Core.Downloader.Extension_
             }
             else
             {
-                HashAlgorithm Computer_Algorithm;
-
-                switch (Hash_Mode)
+                using HashAlgorithm Computer_Algorithm = Hash_Mode switch
                 {
-                    case 0:
-                        Computer_Algorithm = MD5.Create();
-                        break;
-                    case 2:
-                        Computer_Algorithm = SHA256.Create();
-                        break;
-                    case 3:
-                        Computer_Algorithm = SHA512.Create();
-                        break;
-                    default:
-                        Computer_Algorithm = SHA1.Create();
-                        break;
-                }
+                    0 => MD5.Create(),
+                    2 => SHA256.Create(),
+                    3 => SHA512.Create(),
+                    _ => SHA1.Create()
+                };
 
-                StringBuilder Complied_Hash = new StringBuilder();
+                StringBuilder HashBuilder = new StringBuilder();
                 foreach (byte Live_Byte in Computer_Algorithm.ComputeHash(Encoding.UTF8.GetBytes(Input_String)))
                 {
-                    Complied_Hash.Append(Live_Byte.ToString("X2"));
+                    HashBuilder.Append(Live_Byte.ToString("X2"));
                 }
 
-                return Complied_Hash.ToString();
+                return HashBuilder.ToString();
             }
         }
         /// <summary>
@@ -70,21 +60,21 @@ namespace SBRW.Launcher.Core.Downloader.Extension_
             }
             else
             {
-                SHA1 sha1_Generator = SHA1.Create();
-                byte[] retrived_Value = new byte[] { };
-
-                using (var test = File.OpenRead(File_Name))
+                using (SHA1 SHA1_Generator = SHA1.Create())
                 {
-                    retrived_Value = sha1_Generator.ComputeHash(test);
-                }
+                    using (FileStream File_Stream = File.OpenRead(File_Name))
+                    {
+                        byte[] DataBase = SHA1_Generator.ComputeHash(File_Stream);
+                        StringBuilder HashBuilder = new StringBuilder(DataBase.Length * 2);
 
-                StringBuilder stringHashBuilder = new StringBuilder();
-                for (int i = 0; i < retrived_Value.Length; i++)
-                {
-                    stringHashBuilder.Append(retrived_Value[i].ToString("x2"));
-                }
+                        for (int i = 0; i < DataBase.Length; i++)
+                        {
+                            HashBuilder.Append(DataBase[i].ToString("x2"));
+                        }
 
-                return stringHashBuilder.ToString().ToUpperInvariant();
+                        return HashBuilder.ToString().ToUpperInvariant();
+                    }
+                }
             }
         }
     }

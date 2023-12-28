@@ -334,6 +334,8 @@ namespace SBRW.Launcher.Core.Downloader
                         Live_Request.AddRange(File_Size, Provided_File_Size);
                     }
 
+                    Live_Request.Timeout = Download_Settings.Launcher_WebCall_Timeout();
+
                     /* Read the file in chunks of 'Download_Block_Size' */
                     byte[] Live_Buffer = new byte[Download_Block_Size];
                     int Bytes_Read;
