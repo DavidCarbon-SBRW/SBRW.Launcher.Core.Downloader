@@ -1,615 +1,652 @@
-﻿using SBRW.Launcher.Core.Downloader.EventArg_;
+﻿#nullable enable
+using SBRW.Launcher.Core.Downloader.EventArg_;
 using SBRW.Launcher.Core.Downloader.Exception_;
 using SBRW.Launcher.Core.Downloader.Extension_;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Threading;
 
 namespace SBRW.Launcher.Core.Downloader
 {
     /// <summary>
-    /// 
+    /// Provides functionality for downloading files with retry logic and progress tracking.
     /// </summary>
     public class Download_Client
     {
+        private const int DefaultDownload_Block_Size = 8192; // Changed from 1KB to 8KB for better performance
+        private const int DefaultDownload_Retry_Attempts = 10;
+        private const long DefaultWeb_File_Size = 3862102244;
+        private HttpWebResponse? _liveResponse;
         /// <summary>
-        /// Read the file in chunks (in bytes)
+        /// Read the file in chunks (in bytes). Default is 8KB.
         /// </summary>
-        /// <remarks>Default is 1KB</remarks>
-        public int Download_Block_Size { get; set; } = 1024;
+        public int Download_Block_Size { get; set; } = DefaultDownload_Block_Size;
         /// <summary>
-        /// 
+        /// Current download status information.
         /// </summary>
         public Download_Information? Download_Status_Information { get; internal set; }
         /// <summary>
-        /// 
+        /// Retrieves the current download status information.
         /// </summary>
         public Download_Information? Download_Status() { return Download_Status_Information; }
         /// <summary>
-        /// Downloader Download Attempts
+        /// Number of download attempts. Default is 10.
         /// </summary>
-        public int Download_Retry_Attempts { get; set; } = 10;
+        public int Download_Retry_Attempts { get; set; } = DefaultDownload_Retry_Attempts;
         /// <summary>
-        /// 
+        /// Disables the updating of download status information.
         /// </summary>
         public bool Disable_Download_Status_Information { get; set; }
         /// <summary>
-        /// 
+        /// Flag to cancel the current download operation.
         /// </summary>
         public bool Cancel { get; set; }
         /// <summary>
-        /// File Hash Comparison
+        /// Expected SHA1 hash of the file after download for validation.
         /// </summary>
         public string File_Hash { get; set; } = "88C886B6D131C052365C3D6D14E14F67A4E2C253";
         /// <summary>
-        /// File Name to be Set Locally
+        /// Local file name to be set. Default is "GameFiles.sbrwpack".
         /// </summary>
         public string File_Name { get; set; } = "GameFiles.sbrwpack";
         /// <summary>
-        /// File Size on Local Disk
+        /// Current file size on local disk.
         /// </summary>
-        public long File_Size { get; set; } = 0;
+        public long File_Size { get; private set; } = 0;
         /// <summary>
-        /// File Size that is being updated by Downloader
+        /// Live updated file size during download.
         /// </summary>
         public long File_Size_Live { get; internal set; } = 0;
         /// <summary>
-        /// 
+        /// Base folder path for game files.
         /// </summary>
         public string Folder_Path { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Game Files");
         /// <summary>
-        /// 
+        /// Full path to the downloaded file.
         /// </summary>
         public string File_Path { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Game Files", ".Launcher", "Downloads", "GameFiles.sbrwpack");
         /// <summary>
-        /// Removes invalid File if File Hash does not Match
+        /// Determines if an invalid file should be removed if its hash does not match.
         /// </summary>
         public bool File_Removal { get; set; } = false;
         /// <summary>
-        /// 
+        /// Start time of the download operation.
         /// </summary>
-        public DateTime Start_Time { get; set; }
+        public DateTime Start_Time { get; private set; }
         /// <summary>
-        /// 
+        /// Default web URL for downloads.
         /// </summary>
         public string Web_URL { get; set; } = "http://localhost";
         /// <summary>
-        /// Expected File Size on the Web Server
+        /// Expected file size on the web server.
         /// </summary>
-        public long Web_File_Size { get; set; } = 3862102244;
+        public long Web_File_Size { get; set; } = DefaultWeb_File_Size;
         /// <summary>
-        /// 
+        /// Remaining file size to download from the web server.
         /// </summary>
         public long Web_File_Size_Remaining { get; internal set; } = 0;
         /// <summary>
-        /// 
+        /// Event Delegate for reporting download completion.
         /// </summary>
-        private HttpWebResponse? Live_Response { get; set; }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Sender"></param>
-        /// <param name="Events"></param>
         public delegate void Download_Data_Progress_Handler(object Sender, Download_Data_Progress_EventArgs Events);
         /// <summary>
-        /// 
+        /// Event for reporting download progress.
         /// </summary>
         public event Download_Data_Progress_Handler? Live_Progress;
         /// <summary>
-        /// 
+        /// Event Delegate for reporting download completion.
         /// </summary>
-        /// <param name="Sender"></param>
-        /// <param name="Events"></param>
         public delegate void Download_Data_Completion_Handler(object Sender, Download_Data_Complete_EventArgs Events);
         /// <summary>
-        /// 
+        /// Event for reporting download completion.
         /// </summary>
         public event Download_Data_Completion_Handler? Complete;
         /// <summary>
-        /// 
+        /// Event Delegate for reporting internal errors during download.
         /// </summary>
         /// <param name="Sender"></param>
         /// <param name="Events"></param>
         public delegate void Download_Data_Exception_Handler(object Sender, Download_Exception_EventArgs Events);
         /// <summary>
-        /// 
+        /// Event for reporting internal errors during download.
         /// </summary>
         public event Download_Data_Exception_Handler? Internal_Error;
         /// <summary>
-        /// 
+        /// Routes exceptions to the Internal_Error event or re-throws them.
         /// </summary>
-        /// <param name="Event_Hook"></param>
-        /// <param name="Exception_Caught"></param>
-        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught)
+        /// <param name="hookEvent">If true, the exception is routed to the event. Otherwise, it's re-thrown.</param>
+        /// <param name="exceptionCaught">The exception that was caught.</param>
+        internal void Exception_Router(bool hookEvent, Exception exceptionCaught)
         {
-            Exception_Router(Event_Hook, Exception_Caught, false);
+            Exception_Router(hookEvent, exceptionCaught, false);
         }
+
         /// <summary>
-        /// 
+        /// Routes exceptions to the Internal_Error event or re-throws them, indicating if it's web-related.
         /// </summary>
-        /// <param name="Event_Hook"></param>
-        /// <param name="Exception_Caught"></param>
-        /// <param name="Related_To_WebClient"></param>
-        internal void Exception_Router(bool Event_Hook, Exception Exception_Caught, bool Related_To_WebClient)
+        /// <param name="hookEvent">If true, the exception is routed to the event. Otherwise, it's re-thrown.</param>
+        /// <param name="exceptionCaught">The exception that was caught.</param>
+        /// <param name="relatedToWebClient">True if the exception is related to the web client, otherwise false.</param>
+        internal void Exception_Router(bool hookEvent, Exception exceptionCaught, bool relatedToWebClient)
         {
-            if (Live_Response != null)
+            _liveResponse?.Close();
+            _liveResponse?.Dispose();
+            _liveResponse = null;
+
+            if (relatedToWebClient)
             {
-                Live_Response.Close();
-                Live_Response.Dispose();
-                Live_Response = null;
+                // Stop the download to prevent memory leaks if a web-related error occurs
+                Cancel = true;
             }
 
-            if (Related_To_WebClient)
+            if (Internal_Error != null && hookEvent)
             {
-                /* Lets stop the download to pervert any memory leaks */
-                this.Cancel = true;
-            }
-
-            if (this.Internal_Error != null && Event_Hook)
-            {
-                this.Internal_Error(this, new Download_Exception_EventArgs(Exception_Caught, DateTime.Now, Related_To_WebClient));
+                Internal_Error(this, new Download_Exception_EventArgs(exceptionCaught, DateTime.Now, relatedToWebClient));
             }
             else
             {
-                throw Exception_Caught;
+                throw exceptionCaught;
             }
         }
+
         /// <summary>
-        /// 
+        /// Initiates a download with default parameters.
         /// </summary>
         public void Download()
         {
             Download(Web_URL, Folder_Path, File_Path, Web_File_Size, File_Name);
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Web_Address"></param>
-        public void Download(string Web_Address)
-        {
-            Download(Web_Address, string.Empty);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        public void Download(string Web_Address, string Location_Folder)
-        {
-            Download(Web_Address, Location_Folder, string.Empty);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        /// <param name="Provided_Arhive_File"></param>
-        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File)
-        {
-            Download(Web_Address, Location_Folder, Provided_Arhive_File, 3862102244);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        /// <param name="Provided_Arhive_File"></param>
-        /// <param name="Provided_File_Size"></param>
-        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size)
-        {
-            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, "GameFiles.sbrwpack");
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        /// <param name="Provided_Arhive_File"></param>
-        /// <param name="Provided_File_Size"></param>
-        /// <param name="Provided_File_Name"></param>
-        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_File_Name)
-        {
-            Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_File_Name, 0);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="Web_Address"></param>
-        /// <param name="Location_Folder"></param>
-        /// <param name="Provided_Arhive_File"></param>
-        /// <param name="Provided_File_Size"></param>
-        /// <param name="Provided_File_Name"></param>
-        /// <param name="Error_Rate"></param>
-        /// <exception cref="Downloaded_File_Hash_Invalid_Exception"></exception>
-        /// <exception cref="Exception"></exception>
-        public void Download(string Web_Address, string Location_Folder, string Provided_Arhive_File, long Provided_File_Size, string Provided_File_Name, int Error_Rate)
-        {
-            HttpWebRequest Live_Request;
-            FileStream? Live_Writer = default;
 
+        /// <summary>
+        /// Initiates a download to a specified web address.
+        /// </summary>
+        /// <param name="webAddress">The URL of the file to download.</param>
+        public void Download(string webAddress)
+        {
+            Download(webAddress, string.Empty);
+        }
+
+        /// <summary>
+        /// Initiates a download to a specified web address and local folder.
+        /// </summary>
+        /// <param name="webAddress">The URL of the file to download.</param>
+        /// <param name="locationFolder">The local folder to save the file.</param>
+        public void Download(string webAddress, string locationFolder)
+        {
+            Download(webAddress, locationFolder, string.Empty);
+        }
+
+        /// <summary>
+        /// Initiates a download with a specified web address, local folder, and archive file.
+        /// </summary>
+        /// <param name="webAddress">The URL of the file to download.</param>
+        /// <param name="locationFolder">The local folder to save the file.</param>
+        /// <param name="providedArchiveFile">The provided archive file path.</param>
+        public void Download(string webAddress, string locationFolder, string providedArchiveFile)
+        {
+            Download(webAddress, locationFolder, providedArchiveFile, DefaultWeb_File_Size);
+        }
+
+        /// <summary>
+        /// Initiates a download with a specified web address, local folder, archive file, and expected file size.
+        /// </summary>
+        /// <param name="webAddress">The URL of the file to download.</param>
+        /// <param name="locationFolder">The local folder to save the file.</param>
+        /// <param name="providedArchiveFile">The provided archive file path.</param>
+        /// <param name="providedFile_Size">The expected size of the file to download.</param>
+        public void Download(string webAddress, string locationFolder, string providedArchiveFile, long providedFile_Size)
+        {
+            Download(webAddress, locationFolder, providedArchiveFile, providedFile_Size, File_Name);
+        }
+
+        /// <summary>
+        /// Initiates a download with all specified parameters.
+        /// </summary>
+        /// <param name="webAddress">The URL of the file to download.</param>
+        /// <param name="locationFolder">The local folder to save the file.</param>
+        /// <param name="providedArchiveFile">The provided archive file path.</param>
+        /// <param name="providedFile_Size">The expected size of the file to download.</param>
+        /// <param name="providedFile_Name">The local name for the downloaded file.</param>
+        public void Download(string webAddress, string locationFolder, string providedArchiveFile, long providedFile_Size, string providedFile_Name)
+        {
+            Download(webAddress, locationFolder, providedArchiveFile, providedFile_Size, providedFile_Name, 0);
+        }
+
+        /// <summary>
+        /// Initiates a download operation with retry logic.
+        /// </summary>
+        /// <param name="webAddress">The URL of the file to download.</param>
+        /// <param name="locationFolder">The local folder to save the file.</param>
+        /// <param name="providedArchiveFile">The provided archive file path.</param>
+        /// <param name="providedFile_Size">The expected size of the file to download.</param>
+        /// <param name="providedFile_Name">The local name for the downloaded file.</param>
+        /// <param name="errorRate">Current retry attempt count.</param>
+        /// <exception cref="Downloaded_File_Hash_Invalid_Exception">Thrown if the downloaded file's hash does not match the expected hash.</exception>
+        /// <exception cref="Download_Client_Exception">Thrown if the download client is interrupted or too many retries occur.</exception>
+        /// <exception cref="ArgumentException">Thrown if the URL is malformed.</exception>
+        public void Download(string webAddress, string locationFolder, string providedArchiveFile, long providedFile_Size, string providedFile_Name, int errorRate)
+        {
+            FileStream? liveWriter = null;
             try
             {
-#if !NETFRAMEWORK
-#pragma warning disable CS8604 // Will not be null when 'Provided_Arhive_File' is string.Empty or Null, it will default to the Location Folder
-#pragma warning disable CS8601 //.NET 6
-#endif
-                Folder_Path = File.Exists(Provided_Arhive_File) ? Path.GetDirectoryName(Provided_Arhive_File) : Path.Combine(Location_Folder, ".Launcher", "Downloads");
-                File_Name = !string.IsNullOrWhiteSpace(Provided_File_Name) ? Provided_File_Name : Path.GetFileName(Web_Address);
-                File_Path = File.Exists(Provided_Arhive_File) ? Provided_Arhive_File : Path.Combine(Folder_Path, File_Name);
-                if (Provided_File_Size > 0)
+                // Set paths and file size
+                Folder_Path = !string.IsNullOrWhiteSpace(providedArchiveFile) && File.Exists(providedArchiveFile)
+                    ? Path.GetDirectoryName(providedArchiveFile)! // ! used as Path.GetDirectoryName will return null if no directory exists. Assuming it will always have one from ProvidedArchiveFile if it exists
+                    : Path.Combine(locationFolder, ".Launcher", "Downloads");
+
+                File_Name = !string.IsNullOrWhiteSpace(providedFile_Name) ? providedFile_Name : Path.GetFileName(webAddress);
+                File_Path = !string.IsNullOrWhiteSpace(providedArchiveFile) && File.Exists(providedArchiveFile)
+                    ? providedArchiveFile
+                    : Path.Combine(Folder_Path, File_Name);
+
+                if (providedFile_Size > 0)
                 {
-                    Web_File_Size = Provided_File_Size;
+                    Web_File_Size = providedFile_Size;
                 }
 
-                /* Game Folder */
-                if (!Directory.Exists(Location_Folder))
-                {
-                    Directory.CreateDirectory(Location_Folder);
-                }
-                /* Game Pack Cache Folder */
-                if (!Directory.Exists(Folder_Path))
-                {
-                    Directory.CreateDirectory(Folder_Path);
-#if !NETFRAMEWORK
-#pragma warning restore CS8604 // Possible null reference argument.
-#pragma warning restore CS8601 //.NET 6
-#endif
-                }
-                /* Game Pack File */
-                if (!File.Exists(File_Path))
-                {
-                    File.Create(File_Path).Close();
-                }
-                else
-                {
-                    File_Size = new FileInfo(File_Path).Length;
+                // Ensure directories exist
+                EnsureDirectoryExists(locationFolder);
+                EnsureDirectoryExists(Folder_Path);
 
-                    if (File_Size > Web_File_Size)
-                    {
-                        File.Delete(File_Path);
-                        File_Size = 0;
-                        File.Create(File_Path).Close();
-                    }
-                    else if (File_Size == Web_File_Size && File_Removal)
-                    {
-                        if(Hashes.Hash_SHA(File_Path) != File_Hash)
-                        {
-                            File.Delete(File_Path);
-                            File_Size = 0;
-                            File.Create(File_Path).Close();
-                        }
-                    }
-                }
+                // Initialize local file state
+                InitializeLocalFileState();
 
                 if (File_Size == Web_File_Size)
                 {
-                    if ((this.Live_Progress != null) && !Cancel)
-                    {
-                        this.Live_Progress(this,
-                            new Download_Data_Progress_EventArgs(Web_File_Size, File_Size, Web_File_Size_Remaining, Start_Time, Error_Rate));
-                    }
-
-                    string Caluated_Local_File_Hash = Hashes.Hash_SHA(File_Path);
-
-                    if (Caluated_Local_File_Hash == File_Hash)
-                    {
-                        if ((this.Complete != null) && !Cancel)
-                        {
-                            this.Complete(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
-                        }
-                        else
-                        {
-                            Cancel = true;
-                        }
-                    }
-                    else
-                    {
-                        throw new Downloaded_File_Hash_Invalid_Exception("Local File does not match Provided Hash. " +
-                            "Excepted: " + File_Hash + " File: " + 
-                            (string.IsNullOrWhiteSpace(Caluated_Local_File_Hash) ? "Null String" : Caluated_Local_File_Hash));
-                    }
+                    HandleCompletedDownload(errorRate);
                 }
                 else
                 {
-                    /* Set Time when we Started Request */
-                    if (Start_Time == default)
-                    {
-                        Start_Time = DateTime.Now;
-                    }
+                    PerformDownload(webAddress, locationFolder, providedArchiveFile, providedFile_Size, providedFile_Name, errorRate);
+                }
+            }
+#if !DEBUG
+            catch (WebException ex)
+            {
+                Exception_Router(true, ex, true);
+            }
+            catch (UriFormatException ex)
+            {
+                Exception_Router(true, new ArgumentException(
+                    $"Could not parse the URL \"{webAddress}\" - it's either malformed or is an unknown protocol.", ex));
+            }
+            catch (Exception ex)
+            {
+                Exception_Router(true, ex);
+            }
+#endif
+            finally
+            {
+                liveWriter?.Flush();
+                liveWriter?.Close();
+                liveWriter?.Dispose();
+            }
+        }
 
-                    /* Create a new HttpWebRequest instance. */
-#if !NETFRAMEWORK
+        private void EnsureDirectoryExists(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+        }
+
+        private void InitializeLocalFileState()
+        {
+            if (!File.Exists(File_Path))
+            {
+                // Create the file if it doesn't exist. Using FileStream for proper disposal.
+                using (File.Create(File_Path)) { }
+                File_Size = 0;
+            }
+            else
+            {
+                File_Size = new FileInfo(File_Path).Length;
+
+                if (File_Size > Web_File_Size)
+                {
+                    File.Delete(File_Path);
+                    using (File.Create(File_Path)) { }
+                    File_Size = 0;
+                }
+                else if (File_Size == Web_File_Size && File_Removal)
+                {
+                    if (!string.IsNullOrEmpty(File_Hash) && Hashes.Hash_SHA(File_Path) != File_Hash)
+                    {
+                        File.Delete(File_Path);
+                        using (File.Create(File_Path)) { }
+                        File_Size = 0;
+                    }
+                }
+            }
+        }
+
+        private void HandleCompletedDownload(int errorRate)
+        {
+            Live_Progress?.Invoke(this,
+                new Download_Data_Progress_EventArgs(Web_File_Size, File_Size, Web_File_Size_Remaining, Start_Time, errorRate));
+
+            string calculatedLocalFile_Hash = Hashes.Hash_SHA(File_Path);
+
+            if (calculatedLocalFile_Hash == File_Hash)
+            {
+                if (Complete != null && !Cancel)
+                {
+                    Complete(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
+                }
+                else
+                {
+                    Cancel = true;
+                }
+            }
+            else
+            {
+                throw new Downloaded_File_Hash_Invalid_Exception($"Local File does not match Provided Hash. Excepted: {File_Hash} File: {(string.IsNullOrWhiteSpace(calculatedLocalFile_Hash) ? "Null String" : calculatedLocalFile_Hash)}");
+            }
+        }
+
+        private void PerformDownload(string webAddress, string locationFolder, string providedArchiveFile, long providedFile_Size, string providedFile_Name, int errorRate)
+        {
+            Start_Time = DateTime.Now; // Set time when request starts
+
+            HttpWebRequest liveRequest;
+
+            for (int attempt = errorRate; attempt <= Download_Retry_Attempts; attempt++)
+            {
+                if (Cancel)
+                {
+                    break;
+                }
+
+                try
+                {
+#if NETFRAMEWORK
+                    liveRequest = (HttpWebRequest)WebRequest.Create(webAddress);
+#else
+                    // Using WebRequest.Create for compatibility, but HttpClient is preferred in modern .NET.
+                    // This warning is suppressed as HttpWebRequest is used due to .NET Framework 4.6.1 target.
 #pragma warning disable SYSLIB0014 // Type or member is obsolete
+                    liveRequest = (HttpWebRequest)WebRequest.Create(webAddress);
+#pragma warning restore SYSLIB0014
 #endif
-                    Live_Request = (HttpWebRequest)WebRequest.Create(Web_Address);
-#if !NETFRAMEWORK
-#pragma warning restore SYSLIB0014 // Type or member is obsolete
-#endif
-                    Live_Request.UserAgent = Download_Settings.Header;
-                    Live_Request.Headers["X-UserAgent"] = Download_Settings.Header;
+                    liveRequest.UserAgent = Download_Settings.Header;
+                    liveRequest.Headers["X-UserAgent"] = Download_Settings.Header;
 
-                    if (File_Size > 0 && Provided_File_Size > 0)
+                    if (File_Size > 0 && providedFile_Size > 0)
                     {
-                        Live_Request.AddRange(File_Size, Provided_File_Size);
+                        liveRequest.AddRange(File_Size, providedFile_Size);
                     }
 
-                    Live_Request.Timeout = Download_Settings.Launcher_WebCall_Timeout();
+                    liveRequest.Timeout = Download_Settings.Launcher_WebCall_Timeout();
 
-                    /* Read the file in chunks of 'Download_Block_Size' */
-                    byte[] Live_Buffer = new byte[Download_Block_Size];
-                    int Bytes_Read;
+                    byte[] liveBuffer = new byte[Download_Block_Size];
                     File_Size_Live = File_Size;
 
-                    /* Send the request and get the response. */
-                    Live_Response = (HttpWebResponse)Live_Request.GetResponse();
-
-                    if (Live_Response == null)
+                    using (_liveResponse = (HttpWebResponse)liveRequest.GetResponse())
                     {
-                        throw new Exception(
-                            string.Format("Could not download \"{0}\" - Received Response is Null",
-                            Web_Address));
-                    }
-                    else if (Live_Response.ContentType.Contains("text/html"))
-                    {
-                        throw new Exception(
-                            string.Format("Could not download \"{0}\" - A web page was returned from the web server.",
-                            Web_Address));
-                    }
-                    else if (Live_Response.StatusCode == HttpStatusCode.NotFound)
-                    {
-                        throw new Exception(
-                            string.Format("Could not download \"{0}\" - File not Found on web server.",
-                            Web_Address));
-                    }
-                    else
-                    {
-                        if (Live_Response.StatusCode != HttpStatusCode.PartialContent)
+                        if (_liveResponse == null)
                         {
-                            if (File_Size != 0)
-                            {
-                                File.Delete(File_Path);
-                                File_Size = 0;
-                                File.Create(File_Path).Close();
-                            }
+                            throw new Exception($"Could not download \"{webAddress}\" - Received Response is Null");
                         }
-
-                        /* Get the stream containing the response. */
-                        using (Stream Live_Stream = Live_Response.GetResponseStream())
+                        else if (_liveResponse.ContentType?.Contains("text/html") == true)
                         {
-                            /* Use a FileStream to write the file to the local file system. */
-                            Live_Writer = new FileStream(File_Path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-                            Web_File_Size_Remaining = Live_Response.ContentLength;
-
-                            while ((Bytes_Read = Live_Stream.Read(Live_Buffer, 0, Download_Block_Size)) > 0)
+                            throw new Exception($"Could not download \"{webAddress}\" - A web page was returned from the web server.");
+                        }
+                        else if (_liveResponse.StatusCode == HttpStatusCode.NotFound)
+                        {
+                            throw new Exception($"Could not download \"{webAddress}\" - File not Found on web server.");
+                        }
+                        else
+                        {
+                            if (_liveResponse.StatusCode != HttpStatusCode.PartialContent && File_Size != 0)
                             {
-                                if (Cancel)
-                                {
-                                    break;
-                                }
-                                else
-                                {
-                                    Live_Writer.Write(Live_Buffer, 0, Bytes_Read);
-                                    File_Size_Live += Bytes_Read;
+                                // If not partial content and file size is not zero, restart download
+                                File.Delete(File_Path);
+                                using (File.Create(File_Path)) { }
+                                File_Size = 0;
+                                File_Size_Live = 0;
+                            }
 
-                                    if ((this.Live_Progress != null) && !Cancel)
+                            using (Stream liveStream = _liveResponse.GetResponseStream())
+                            using (FileStream liveWriter = new FileStream(File_Path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                            {
+                                Web_File_Size_Remaining = _liveResponse.ContentLength;
+                                int bytesRead;
+                                while ((bytesRead = liveStream.Read(liveBuffer, 0, Download_Block_Size)) > 0)
+                                {
+                                    if (Cancel)
                                     {
-                                        this.Live_Progress(this,
-                                            new Download_Data_Progress_EventArgs(Web_File_Size, File_Size_Live, Web_File_Size_Remaining, Start_Time, Error_Rate));
+                                        break;
                                     }
-                                    
-                                    if (!Disable_Download_Status_Information && !Cancel)
+
+                                    liveWriter.Write(liveBuffer, 0, bytesRead);
+                                    File_Size_Live += bytesRead;
+
+                                    Live_Progress?.Invoke(this,
+                                        new Download_Data_Progress_EventArgs(Web_File_Size, File_Size_Live, Web_File_Size_Remaining, Start_Time, attempt));
+
+                                    if (!Disable_Download_Status_Information)
                                     {
                                         Download_Status_Information = new Download_Information()
                                         {
                                             File_Size_Total = Web_File_Size,
                                             File_Size_Current = File_Size_Live,
                                             File_Size_Remaining = Web_File_Size_Remaining,
-                                            Download_Percentage = (int)((((double)File_Size_Live) / Web_File_Size) * 100),
+                                            Download_Percentage = (int)(((double)File_Size_Live / Web_File_Size) * 100), // Fixed integer division
                                             Start_Time = Start_Time,
-                                            Download_Attempts = Error_Rate
+                                            Download_Attempts = attempt
                                         };
                                     }
+                                }
 
-                                    if (Cancel)
+                                if (Cancel)
+                                {
+                                    break;
+                                }
+
+                                // Final status update if not cancelled
+                                if (!Disable_Download_Status_Information )
+                                {
+                                    Download_Status_Information = new Download_Information()
                                     {
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (!Disable_Download_Status_Information && !Cancel)
-                            {
-                                Download_Status_Information = new Download_Information()
-                                {
-                                    File_Size_Total = Web_File_Size,
-                                    File_Size_Current = File_Size_Live,
-                                    File_Size_Remaining = Web_File_Size_Remaining,
-                                    Download_Percentage = (int)((((double)File_Size_Live) / Web_File_Size) * 100),
-                                    Start_Time = Start_Time,
-                                    End_Time = DateTime.Now,
-                                    Download_Complete = true,
-                                    Download_Attempts = Error_Rate
-                                };
-                            }
-
-                            if ((this.Complete != null) && !Cancel)
-                            {
-                                if (Live_Response != null)
-                                {
-                                    Live_Response.Close();
-                                    Live_Response.Dispose();
-                                    Live_Response = null;
+                                        File_Size_Total = Web_File_Size,
+                                        File_Size_Current = File_Size_Live,
+                                        File_Size_Remaining = Web_File_Size_Remaining,
+                                        Download_Percentage = (int)(((double)File_Size_Live / Web_File_Size) * 100), // Fixed integer division
+                                        Start_Time = Start_Time,
+                                        End_Time = DateTime.Now,
+                                        Download_Complete = true,
+                                        Download_Attempts = attempt
+                                    };
                                 }
 
-                                if (Live_Writer != null)
+                                // Check completion and hash
+                                if (File_Size_Live == Web_File_Size)
                                 {
-                                    Live_Writer.Flush();
-                                    Live_Writer.Close();
-                                    Live_Writer.Dispose();
-                                    Live_Writer = null;
-                                }
+                                    string calculatedLocalFile_Hash = Hashes.Hash_SHA(File_Path);
 
-                                string Caluated_Local_File_Hash = Hashes.Hash_SHA(File_Path);
-
-                                if (Caluated_Local_File_Hash == File_Hash)
-                                {
-                                    if ((this.Complete != null) && !Cancel)
+                                    if (calculatedLocalFile_Hash == File_Hash)
                                     {
-                                        this.Complete(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
+                                        Complete?.Invoke(this, new Download_Data_Complete_EventArgs(true, File_Path, DateTime.Now));
+                                        return; // Successfully completed, exit loop and method
                                     }
                                     else
                                     {
-                                        Cancel = true;
+                                        // Hash mismatch, attempt retry if within limits
+                                        if (attempt < Download_Retry_Attempts)
+                                        {
+                                            File.Delete(File_Path); // Delete corrupted file for retry
+                                            using (File.Create(File_Path)) { } // Recreate empty file
+                                            File_Size = 0;
+                                            File_Size_Live = 0;
+                                            // Continue to next iteration (retry)
+                                        }
+                                        else
+                                        {
+                                            throw new Downloaded_File_Hash_Invalid_Exception($"Local File does not match Provided Hash. Expected: {File_Hash} File: {(string.IsNullOrWhiteSpace(calculatedLocalFile_Hash) ? "Null String" : calculatedLocalFile_Hash)}");
+                                        }
                                     }
                                 }
-                                /* If Current File Size is Smaller than the File on the Server OR 
-                                 * If Current File Size is Greator than on the Server AND
-                                 * If the Amount of Retrys is less than or equal to 'Download_Retry_Attempts'
-                                 * 
-                                 * Go ahead and try the download
-                                 */
-                                else if (((File_Size_Live < Web_File_Size) || (File_Size_Live > Web_File_Size)) && (Error_Rate <= Download_Retry_Attempts))
+                                else if (File_Size_Live < Web_File_Size)
                                 {
-                                    /* TODO: Check why this function causes issues for Unix Builds and for those who have a connection that can cause it to fail */
-                                    Download(Web_Address, Location_Folder, Provided_Arhive_File, Provided_File_Size, Provided_File_Name, Error_Rate + 1);
+                                    // Incomplete download, attempt retry if within limits
+                                    if (attempt < Download_Retry_Attempts)
+                                    {
+                                        // Continue to next iteration (retry)
+                                    }
+                                    else
+                                    {
+                                        throw new Download_Client_Exception("Download Client failed to download the complete file after multiple attempts. Please Manually Retry.");
+                                    }
                                 }
-                                else if (Error_Rate <= Download_Retry_Attempts)
+                                else if (File_Size_Live > Web_File_Size)
                                 {
-                                    throw new Downloaded_File_Hash_Invalid_Exception("Local File does not match Provided Hash. " +
-                                        "Excepted: " + File_Hash + " File: " +
-                                        (string.IsNullOrWhiteSpace(Caluated_Local_File_Hash) ? "Null String" : Caluated_Local_File_Hash));
+                                    // Downloaded more than expected, indicating an issue. Delete and retry.
+                                    if (attempt < Download_Retry_Attempts)
+                                    {
+                                        File.Delete(File_Path);
+                                        using (File.Create(File_Path)) { }
+                                        File_Size = 0;
+                                        File_Size_Live = 0;
+                                        // Continue to next iteration (retry)
+                                    }
+                                    else
+                                    {
+                                        throw new Download_Client_Exception("Download Client downloaded more data than expected after multiple attempts. Please Manually Retry.");
+                                    }
                                 }
-                                else
-                                {
-                                    throw new Download_Client_Exception("Download Client was being Interrupted. Please Manually Retry.");
-                                }
-                            }
-                            else if ((Live_Response != null) && Cancel)
-                            {
-                                Live_Response.Close();
-                                Live_Response.Dispose();
-                                Live_Response = null;
                             }
                         }
                     }
                 }
-            }
-#if !DEBUG
-            catch (WebException Error_Caught)
-            {
-                Exception_Router(true, Error_Caught, true);
-            }
-            catch (UriFormatException Error)
-            {
-                Exception_Router(true, new ArgumentException(
-                    string.Format("Could not parse the URL \"{0}\" - it's either malformed or is an unknown protocol.", Web_Address), Error));
-            }
-            catch (Exception Error)
-            {
-                Exception_Router(true, Error);
-            }
-#endif
-            finally
-            {
-                if (Live_Writer != null)
+                catch (WebException ex)
                 {
-                    Live_Writer.Flush();
-                    Live_Writer.Close();
-                    Live_Writer.Dispose();
-                    Live_Writer = null;
-                }
-            }
-        }
-        /// <summary>
-        /// Download a file from a list or URLs. If downloading from one of the URLs fails,
-        /// another URL is tried.
-        /// </summary>
-        public void Download(List<string> Web_Address_List)
-        {
-            this.Download(Web_Address_List, string.Empty, -1);
-        }
-        /// <summary>
-        /// Download a file from a list or URLs. If downloading from one of the URLs fails,
-        /// another URL is tried.
-        /// </summary>
-        public void Download(List<string> Web_Address_List, string Location_Folder, long Provied_File_Size, string Provided_Archive_File = "")
-        {
-            // validate input
-            if (Web_Address_List == null)
-            {
-                Exception_Router(true, new ArgumentNullException("Web_Address_List"));
-            }
-            else if (Web_Address_List.Count == 0)
-            {
-                Exception_Router(true, new ArgumentException("EMPTY Web_Address_List"));
-            }
-            else
-            {
-                // try each url in the list.
-                // if one succeeds, we are done.
-                // if any fail, move to the next.
-                Exception? Web_Address_Exception = null;
-                foreach (string Single_Web_Address in Web_Address_List)
-                {
-                    Web_Address_Exception = null;
-                    try
+                    Exception_Router(true, ex, true);
+                    if (attempt < Download_Retry_Attempts)
                     {
-                        Download(Single_Web_Address, Location_Folder, Provided_Archive_File, Provied_File_Size);
+                        // Log retry attempt and continue
+                        Thread.Sleep(1000 * (attempt + 1)); // Exponential back-off for retries
                     }
-                    catch (Exception e)
+                    else
                     {
-                        Web_Address_Exception = e;
-                    }
-                    // If we got through that without an exception, we found a good url
-                    if (Web_Address_Exception == null)
-                    {
-                        break;
+                        throw; // Re-throw if out of retries
                     }
                 }
+                catch (UriFormatException ex)
+                {
+                    Exception_Router(true, new ArgumentException(
+                        $"Could not parse the URL \"{webAddress}\" - it's either malformed or is an unknown protocol.", ex));
+                    return; // Fatal error, no retry
+                }
+                catch (Exception ex)
+                {
+                    Exception_Router(true, ex);
+                    if (attempt < Download_Retry_Attempts)
+                    {
+                        // Log retry attempt and continue
+                        Thread.Sleep(1000 * (attempt + 1)); // Exponential back-off for retries
+                    }
+                    else
+                    {
+                        throw; // Re-throw if out of retries
+                    }
+                }
+            }
 
-                if (Web_Address_Exception != null)
-                {
-                    Exception_Router(true, Web_Address_Exception);
-                }
+            if (!Cancel && File_Size_Live != Web_File_Size)
+            {
+                throw new Download_Client_Exception("Download Client was being Interrupted or did not complete. Please Manually Retry.");
             }
         }
+
+        /// <summary>
+        /// Download a file from a list of URLs. If downloading from one of the URLs fails,
+        /// another URL is tried.
+        /// </summary>
+        /// <param name="webAddressList">List of URLs to try downloading from.</param>
+        public void Download(List<string> webAddressList)
+        {
+            Download(webAddressList, string.Empty, -1);
+        }
+
+        /// <summary>
+        /// Download a file from a list of URLs. If downloading from one of the URLs fails,
+        /// another URL is tried.
+        /// </summary>
+        /// <param name="webAddressList">List of URLs to try downloading from.</param>
+        /// <param name="locationFolder">The local folder to save the file.</param>
+        /// <param name="providedFile_Size">The expected size of the file to download.</param>
+        /// <param name="providedArchiveFile">The provided archive file path.</param>
+        public void Download(List<string> webAddressList, string locationFolder, long providedFile_Size, string providedArchiveFile = "")
+        {
+            if (webAddressList == null)
+            {
+                Exception_Router(true, new ArgumentNullException(nameof(webAddressList)));
+                return;
+            }
+            if (webAddressList.Count == 0)
+            {
+                Exception_Router(true, new ArgumentException("Web address list is empty.", nameof(webAddressList)));
+                return;
+            }
+
+            Exception? lastException = null;
+            foreach (string singleWebAddress in webAddressList)
+            {
+                try
+                {
+                    Download(singleWebAddress, locationFolder, providedArchiveFile, providedFile_Size);
+                    lastException = null; // Successfully downloaded
+                    break;
+                }
+                catch (Exception e)
+                {
+                    lastException = e;
+                    // Log the attempt failure if needed, then try the next URL
+                }
+            }
+
+            if (lastException != null)
+            {
+                Exception_Router(true, lastException);
+            }
+        }
+
 #if !NETFRAMEWORK
 #pragma warning disable CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
 #endif
         /// <summary>
         /// Asynchronously download a file from the url.
         /// </summary>
-        public void AsyncDownload(string Web_Address)
+        public void AsyncDownload(string webAddress)
         {
-            System.Threading.ThreadPool.QueueUserWorkItem(
-                new System.Threading.WaitCallback(this.WaitCallbackMethod), new string[] { Web_Address, string.Empty });
+            ThreadPool.QueueUserWorkItem(WaitCallbackMethod, new string[] { webAddress, string.Empty });
         }
+
         /// <summary>
         /// Asynchronously download a file from the url to the destination folder.
         /// </summary>
-        public void AsyncDownload(string Web_Address, string Location_Folder)
+        public void AsyncDownload(string webAddress, string locationFolder)
         {
-            System.Threading.ThreadPool.QueueUserWorkItem(
-                new System.Threading.WaitCallback(this.WaitCallbackMethod), new string[] { Web_Address, Location_Folder });
+            ThreadPool.QueueUserWorkItem(WaitCallbackMethod, new string[] { webAddress, locationFolder });
         }
+
         /// <summary>
-        /// Asynchronously download a file from a list or URLs. If downloading from one of the URLs fails,
-        /// another URL is tried.
+        /// Asynchronously download a file from a list of URLs.
         /// </summary>
-        public void AsyncDownload(List<string> Web_Address_List, string Location_Folder)
+        public void AsyncDownload(List<string> webAddressList, string locationFolder)
         {
-            System.Threading.ThreadPool.QueueUserWorkItem(
-                new System.Threading.WaitCallback(this.WaitCallbackMethod), new object[] { Web_Address_List, Location_Folder });
+            ThreadPool.QueueUserWorkItem(WaitCallbackMethod, new object[] { webAddressList, locationFolder });
         }
+
         /// <summary>
-        /// Asynchronously download a file from a list or URLs. If downloading from one of the URLs fails,
-        /// another URL is tried.
+        /// Asynchronously download a file from a list of URLs.
         /// </summary>
-        public void AsyncDownload(List<string> Web_Address_List)
+        public void AsyncDownload(List<string> webAddressList)
         {
-            System.Threading.ThreadPool.QueueUserWorkItem(
-                new System.Threading.WaitCallback(this.WaitCallbackMethod), new object[] { Web_Address_List, string.Empty });
+            ThreadPool.QueueUserWorkItem(WaitCallbackMethod, new object[] { webAddressList, string.Empty });
         }
 #if !NETFRAMEWORK
 #pragma warning restore CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
@@ -617,38 +654,41 @@ namespace SBRW.Launcher.Core.Downloader
         /// <summary>
         /// A WaitCallback used by the AsyncDownload methods.
         /// </summary>
-        private void WaitCallbackMethod(object Object_Data)
+        private void WaitCallbackMethod(object? objectData)
         {
-            if (Object_Data != null)
+            if (objectData == null) return;
+
+            if (objectData is string[] stringArray)
             {
-                // Can either be a string array of two strings (url and dest folder),
-                // or an object array containing a list<string> and a dest folder
-                if (Object_Data is string[])
+                if (stringArray.Length >= 2) // Expect at least webAddress and locationFolder
                 {
-                    string[]? List_Strings = Object_Data as string[];
-                    if (List_Strings != null)
-                    {
-                        if (List_Strings.Length > 0 && List_Strings.Length <= 4)
-                        {
-                            this.Download(List_Strings[0], List_Strings[1], List_Strings[2], long.TryParse(List_Strings[3], out long Provied_File_Size) ? Provied_File_Size : -1);
-                        }
-                    }
+                    string webAddress = stringArray[0];
+                    string locationFolder = stringArray[1];
+                    string providedArchiveFile = stringArray.Length > 2 ? stringArray[2] : string.Empty;
+                    long providedFile_Size = stringArray.Length > 3 && long.TryParse(stringArray[3], out long parsedSize) ? parsedSize : -1;
+                    string providedFile_Name = stringArray.Length > 4 ? stringArray[4] : string.Empty;
+
+                    Download(webAddress, locationFolder, providedArchiveFile, providedFile_Size, providedFile_Name);
                 }
-                else
+            }
+            else if (objectData is object[] objectArray)
+            {
+                if (objectArray.Length >= 2) // Expect at least Web_Address_List and Location_Folder
                 {
-                    object[]? List_Objects = Object_Data as object[];
-                    if (List_Objects != null)
+                    if (objectArray[0] is List<string> webAddressList)
                     {
-                        if (List_Objects.Length > 0 && List_Objects.Length <= 3)
+                        string? locationFolder = objectArray[1] as string;
+                        long providedFile_Size = objectArray.Length > 2 && objectArray[2] is string sizeString && long.TryParse(sizeString, out long parsedSize) ? parsedSize : -1;
+                        string providedArchiveFile = objectArray.Length > 3 && objectArray[3] is string archiveString ? archiveString : string.Empty;
+
+                        if (!string.IsNullOrWhiteSpace(locationFolder))
                         {
-                            List<string> Web_Address_List = (List_Objects[0] as List<string>) ?? new List<string>();
-                            string? Location_Folder = List_Objects[1] as string;
-                            if (!string.IsNullOrWhiteSpace(Location_Folder))
-                            {
-#pragma warning disable CS8604 // Possible null reference argument.
-                                this.Download(Web_Address_List, Location_Folder, long.TryParse(List_Objects[2] as string, out long Provied_File_Size) ? Provied_File_Size : -1);
-#pragma warning restore CS8604 // Possible null reference argument.
-                            }
+                            Download(webAddressList, locationFolder, providedFile_Size, providedArchiveFile);
+                        }
+                        else
+                        {
+                            // Handle case where locationFolder is null or whitespace for List<string> overload
+                            Download(webAddressList, AppDomain.CurrentDomain.BaseDirectory, providedFile_Size, providedArchiveFile);
                         }
                     }
                 }
