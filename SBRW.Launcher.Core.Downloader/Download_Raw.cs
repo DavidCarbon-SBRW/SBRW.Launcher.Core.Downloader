@@ -26,9 +26,17 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         public string CdnBaseUrl { get; set; } = string.Empty;
         /// <summary>
-        /// The name of the checksum manifest file (e.g., "checksums.dat").
+        /// The name of the checksum file (e.g., "checksums.dat").
         /// </summary>
         public string ChecksumFileName { get; set; } = "checksums.dat";
+        /// <summary>
+        /// The File Path of the checksum file (e.g., "C:\Soapbox Race World\Launcher\checksums.dat").
+        /// </summary>
+        public string ChecksumFileSaveLocation { get; set; } = "checksums.dat";
+        /// <summary>
+        /// The Hash of the checksum file in SHA1
+        /// </summary>
+        public string ChecksumFileHash { get; set; } = "80D272597981DABA49F5022BBF36FF302FC9D13E";
         /// <summary>
         /// A list of sub-paths within the CdnBaseUrl to try.
         /// </summary>
@@ -37,6 +45,10 @@ namespace SBRW.Launcher.Core.Downloader
         /// Whether to delete all files in the 'scripts' folder
         /// </summary>
         public bool CleanScriptsFolder { get; set; }
+        /// <summary>
+        /// Scan Files only and Do Not Download Files
+        /// </summary>
+        public bool ScanFilesOnly { get; set; }
     }
     /// <summary>
     /// 
@@ -100,16 +112,20 @@ namespace SBRW.Launcher.Core.Downloader
                 {
                     progress.Report(new Download_Raw_Progress_Model
                     {
-                        Message = "Downloading invalid or missing files...",
-                        Status = Download_Raw_Status.Download_Invalid_Files
+                        Message = $"{(_config.ScanFilesOnly ? "Scanned" : "Downloading")} invalid or missing files...",
+                        Status = _config.ScanFilesOnly ? Download_Raw_Status.Scanned_Invalid_Files : Download_Raw_Status.Download_Invalid_Files
                     });
-                    await DownloadInvalidFilesAsync(invalidFiles, result, progress, token);
+
+                    if (!_config.ScanFilesOnly)
+                    {
+                        await DownloadInvalidFilesAsync(invalidFiles, result, progress, token);
+                    }
                 }
 
                 progress.Report(new Download_Raw_Progress_Model
                 {
                     Message = "Verification complete.",
-                    Status = Download_Raw_Status.Verification_Completed,
+                    Status = _config.ScanFilesOnly ? Download_Raw_Status.Verification_Completed_Scan_Only : Download_Raw_Status.Verification_Completed,
                     Percentage = 100
                 });
             }
@@ -160,7 +176,7 @@ namespace SBRW.Launcher.Core.Downloader
                 try
                 {
                     file.Delete();
-                    _logger.Info($"Deleted '.orig' file: {file.FullName}");
+                    _logger.Deleted($"Deleted '.orig' file: {file.FullName}");
                 }
                 catch (Exception ex)
                 {
@@ -185,7 +201,7 @@ namespace SBRW.Launcher.Core.Downloader
                         {
                             File.Delete(entry.FullName);
                         }
-                        _logger.Info($"Deleted symbolic link: {entry.FullName}");
+                        _logger.Deleted($"Deleted symbolic link: {entry.FullName}");
                     }
                     catch (Exception ex)
                     {
@@ -205,7 +221,7 @@ namespace SBRW.Launcher.Core.Downloader
                         try
                         {
                             file.Delete();
-                            _logger.Info($"Deleted script file: {file.Name}");
+                            _logger.Deleted($"Deleted script file: {file.Name}");
                         }
                         catch (Exception ex)
                         {
@@ -225,32 +241,62 @@ namespace SBRW.Launcher.Core.Downloader
         /// <returns></returns>
         private async Task<List<FileChecksum>?> DownloadAndParseChecksumsAsync(IProgress<Download_Raw_Progress_Model> progress, CancellationToken token)
         {
-            progress.Report(new Download_Raw_Progress_Model
-            {
-                Message = "Downloading checksum manifest...",
-                Status = Download_Raw_Status.Download_Checksums
-            });
+            string[] getFilesToCheck = { };
 
-            string checksumUrl = $"{_config.CdnBaseUrl.TrimEnd('/')}/{_config.CdnUnpackedPath.Trim('/')}/{_config.ChecksumFileName}";
-            string[] lines;
-
-            try
+            /* This option is for users who want to scan only. Offline use for example - DavidCarbon */
+            if (_config.ScanFilesOnly)
             {
-                using (var response = await _httpClient.GetAsync(checksumUrl, token))
+                progress.Report(new Download_Raw_Progress_Model
                 {
-                    response.EnsureSuccessStatusCode();
-                    string content = await response.Content.ReadAsStringAsync();
-                    lines = content.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    Message = "Loading checksum file...",
+                    Status = Download_Raw_Status.Download_Checksums
+                });
+
+                if (await CalculateFileHashAsync(_config.ChecksumFileSaveLocation) != _config.ChecksumFileHash)
+                {
+                    /* Read Local checksums file */
+                    getFilesToCheck = File.ReadAllLines(_config.ChecksumFileSaveLocation);
+                }
+                else
+                {
+                    string Error_Message = $"Failed to download checksum file from {_config.ChecksumFileSaveLocation}";
+                    _logger.Error(Error_Message, new Exception(Error_Message));
+                    return null;
                 }
             }
-            catch (Exception ex)
+            else
             {
-                _logger.Error($"Failed to download checksum file from {checksumUrl}", ex);
-                return null;
-            }
+                progress.Report(new Download_Raw_Progress_Model
+                {
+                    Message = "Downloading checksum file...",
+                    Status = Download_Raw_Status.Download_Checksums
+                });
 
+                string checksumUrl = $"{_config.CdnBaseUrl.TrimEnd('/')}/{_config.CdnUnpackedPath.Trim('/')}/{_config.ChecksumFileName}";
+
+                try
+                {
+                    using (var response = await _httpClient.GetAsync(checksumUrl, token))
+                    {
+                        response.EnsureSuccessStatusCode();
+                        string content = await response.Content.ReadAsStringAsync();
+                        getFilesToCheck = content.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    }
+
+                    if (await CalculateFileHashAsync(_config.ChecksumFileSaveLocation) != _config.ChecksumFileHash)
+                    {
+                        File.WriteAllLines(_config.ChecksumFileSaveLocation, getFilesToCheck);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Failed to download checksum file from {checksumUrl}", ex);
+                    return null;
+                }
+            }
+            
             var checksums = new List<FileChecksum>();
-            foreach (var line in lines)
+            foreach (var line in getFilesToCheck)
             {
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
@@ -290,7 +336,7 @@ namespace SBRW.Launcher.Core.Downloader
 
                 if (!File.Exists(localPath))
                 {
-                    _logger.Warn($"Missing file: {item.RelativePath}");
+                    _logger.Missing($"Missing file: {item.RelativePath}");
                     invalidFiles.Add(item.RelativePath);
                 }
                 else
@@ -298,7 +344,7 @@ namespace SBRW.Launcher.Core.Downloader
                     string localHash = await CalculateFileHashAsync(localPath);
                     if (!localHash.Equals(item.Hash, StringComparison.OrdinalIgnoreCase))
                     {
-                        _logger.Warn($"Invalid hash for file: {item.RelativePath} (Expected: {item.Hash}, Got: {localHash})");
+                        _logger.Invalid($"Invalid hash for file: {item.RelativePath} (Expected: {item.Hash}, Got: {localHash})");
                         invalidFiles.Add(item.RelativePath);
                     }
                 }
@@ -447,9 +493,17 @@ namespace SBRW.Launcher.Core.Downloader
         /// </summary>
         Download_Invalid_Files,
         /// <summary>
+        /// Scanned invaild or missing files
+        /// </summary>
+        Scanned_Invalid_Files,
+        /// <summary>
         /// Completed Verifying Files
         /// </summary>
         Verification_Completed,
+        /// <summary>
+        /// Completed Verifying Files (Offline)
+        /// </summary>
+        Verification_Completed_Scan_Only,
         /// <summary>
         /// Operation cancelled by user
         /// </summary>

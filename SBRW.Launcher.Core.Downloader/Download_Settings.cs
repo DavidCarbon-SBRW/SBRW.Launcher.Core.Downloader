@@ -9,7 +9,7 @@ namespace SBRW.Launcher.Core.Downloader
     /// </summary>
     public static class Download_Settings
     {
-        private static string Version_Cache { get; set; } = "0.0.2.4";
+        private static string Version_Cache { get; set; } = "0.4.0";
         private static bool Version_Check { get; set; }
         private static string Version 
         {
@@ -38,9 +38,9 @@ namespace SBRW.Launcher.Core.Downloader
                     Version_Check = true;
                 }
                 
-                if(string.IsNullOrWhiteSpace(Version_Cache))
+                if (string.IsNullOrWhiteSpace(Version_Cache))
                 {
-                    Version_Cache = "0.0.2.0";
+                    Version_Cache = "0.4.0";
                 }
 
                 return Version_Cache; 
