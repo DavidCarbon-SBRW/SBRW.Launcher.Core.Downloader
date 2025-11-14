@@ -285,7 +285,19 @@ namespace SBRW.Launcher.Core.Downloader
 
                     if (await CalculateFileHashAsync(_config.ChecksumFileSaveLocation) != _config.ChecksumFileHash)
                     {
-                        File.WriteAllLines(_config.ChecksumFileSaveLocation, getFilesToCheck);
+                        try
+                        {
+                            if (!Directory.Exists(_config.ChecksumFileSaveLocation))
+                            {
+                                Directory.CreateDirectory(_config.ChecksumFileSaveLocation);
+                            }
+
+                            File.WriteAllLines(_config.ChecksumFileSaveLocation, getFilesToCheck);
+                        }
+                        catch
+                        {
+                            /* Lets ignore the error */
+                        }
                     }
                 }
                 catch (Exception ex)
